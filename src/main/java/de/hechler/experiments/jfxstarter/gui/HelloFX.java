@@ -1,26 +1,5 @@
-# JFX-Starter
+package de.hechler.experiments.jfxstarter.gui;
 
-Experiments with JFX
-
-## setup junit 5 in pom 
-
-https://howtodoinjava.com/junit5/junit5-maven-dependency/
-
-## hello world in JFX
-
-https://openjfx.io/openjfx-docs/
-
-### add jfx installation to path
-
-```
-set PATH_TO_FX="C:\DEV\SDKs\javafx-sdk-17.0.1\lib"
-```
-
-### sample hello-world 
-
-https://github.com/openjfx/samples/blob/master/HelloFX/CLI/hellofx/HelloFX.java
-
-```
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
@@ -44,12 +23,3 @@ public class HelloFX extends Application {
     }
 
 }
-```
-
-### compile on CLI
-
-```
-javac --module-path %PATH_TO_FX% --add-modules javafx.controls HelloFX.java
-```
-
-
