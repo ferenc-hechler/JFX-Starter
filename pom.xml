@@ -75,7 +75,7 @@
                     </descriptorRefs>
                     <archive>
                         <manifest>
-                            <mainClass>de.hechler.experiments.mytreesize.gui.MyTreeSizeMain</mainClass>
+                            <mainClass>de.hechler.experiments.jfxstarter.gui.JFXStarterMain</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
