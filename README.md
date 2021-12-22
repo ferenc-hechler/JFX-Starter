@@ -4,6 +4,8 @@ Experiments with JFX
 
 # Further Infos:
 
+* https://yumberc.github.io/FileBrowser/FileBrowser.html
+** https://github.com/yumberc/yumberc.github.io/blob/master/FileBrowser/FileBrowser.zip
 * http://tutorials.jenkov.com/javafx/treetableview.html
 * https://gist.github.com/jewelsea/5174074
 
