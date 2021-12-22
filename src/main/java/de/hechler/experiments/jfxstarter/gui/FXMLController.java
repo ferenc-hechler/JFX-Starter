@@ -2,11 +2,16 @@ package de.hechler.experiments.jfxstarter.gui;
 
 import java.util.Date;
 
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeTableColumn;
 import javafx.scene.control.TreeTableView;
 import javafx.scene.control.cell.TreeItemPropertyValueFactory;
+import javafx.util.Duration;
 
 public class FXMLController {
     
@@ -14,6 +19,22 @@ public class FXMLController {
     @FXML
     private TreeTableView<ViewData> ttv;
     
+    
+
+    /** small helper class for handling tree loading events. */
+    private static class TreeLoadingEventHandler implements EventHandler<ActionEvent> {
+      private FXMLController controller;
+      private int idx = 0;
+      
+      TreeLoadingEventHandler(FXMLController controller) {
+        this.controller = controller;
+      }
+      
+      @Override public void handle(ActionEvent t) {
+        controller.loadTreeItems("Loaded " + idx, "Loaded " + (idx + 1), "Loaded " + (idx + 2));
+        idx += 3;
+      }
+    }    
     public void initialize() {
         TreeTableColumn<ViewData, String> treeTableColumn1 = new TreeTableColumn<>("Name");
         TreeTableColumn<ViewData, String> treeTableColumn2 = new TreeTableColumn<>("Filesize");
@@ -47,8 +68,28 @@ public class FXMLController {
 
         ttv.setRoot(cars);
         
+        
+        // continuously refresh the TreeItems.
+        // demonstrates using controller methods to manipulate the controlled UI.
+        final Timeline timeline = new Timeline(
+          new KeyFrame(
+            Duration.seconds(3), 
+            new TreeLoadingEventHandler(this)
+          )
+        );
+        timeline.setCycleCount(Timeline.INDEFINITE);
+        timeline.play();        
     }
 
+ // loads some strings into the tree in the application UI.
+    public void loadTreeItems(String... rootItems) {
+      TreeItem<ViewData> root = ttv.getRoot();
+      root.setExpanded(true);
+      for (String itemString: rootItems) {
+        root.getChildren().add(new TreeItem<ViewData>(new ViewData(itemString, 9, now())));
+      }
+    }
+    
 	private Date now() {
 		return new Date();
 	}    
