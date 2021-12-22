@@ -10,6 +10,7 @@ import javafx.scene.control.cell.TreeItemPropertyValueFactory;
 
 public class FXMLController {
     
+	/** see: http://tutorials.jenkov.com/javafx/treetableview.html */
     @FXML
     private TreeTableView<ViewData> ttv;
     
@@ -44,7 +45,7 @@ public class FXMLController {
         cars.getChildren().add(audi);
         cars.getChildren().add(mercedes);
 
-        ttv.setRoot(cars);        
+        ttv.setRoot(cars);
         
     }
 

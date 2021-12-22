@@ -2,6 +2,12 @@
 
 Experiments with JFX
 
+# Further Infos:
+
+* http://tutorials.jenkov.com/javafx/treetableview.html
+* https://gist.github.com/jewelsea/5174074
+
+
 ## setup junit 5 in pom 
 
 https://howtodoinjava.com/junit5/junit5-maven-dependency/
