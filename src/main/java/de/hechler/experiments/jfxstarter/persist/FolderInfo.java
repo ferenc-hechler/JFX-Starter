@@ -9,7 +9,7 @@ public class FolderInfo extends BaseInfo {
 	private List<FileInfo> childFiles;
 	
 	public FolderInfo(long folderID, String name) {
-		super(folderID, name);
+		super(folderID, name, -1);
 		this.childFolders = new ArrayList<>();
 		this.childFiles = new ArrayList<>();
 	}
@@ -40,6 +40,21 @@ public class FolderInfo extends BaseInfo {
 
 	public boolean isFolder() { return true; }
 	public FolderInfo asFolderInfo() { return this; }
+	
+	@Override public long calcSize() {
+		if (size == -1) {
+			long result = 0;
+			for (FileInfo child:childFiles) {
+				result += child.calcSize(); 
+			}
+			for (FolderInfo child:childFolders) {
+				result += child.calcSize(); 
+			}
+			size = result;
+		}
+		return size;
+	}
+	
 	
 	@Override
 	public String toString() {

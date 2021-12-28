@@ -154,7 +154,7 @@ public class ConvertOldFormat {
 
 
 	private FileFolderInfoDAO convertFile(FileInfo file) {
-		return FileFolderInfoDAO.createFileInfo(file.id, file.parentFolder.id, file.name, null, file.lastModified, file.filesize, null, file.sha256);
+		return FileFolderInfoDAO.createFileInfo(file.id, file.parentFolder.id, file.name, null, file.lastModified, file.size, null, file.sha256);
 	}
 
 

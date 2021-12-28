@@ -4,11 +4,13 @@ import java.io.File;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
 import de.hechler.experiments.jfxstarter.persist.BaseInfo;
 import de.hechler.experiments.jfxstarter.persist.VirtualDrive;
+import de.hechler.experiments.jfxstarter.tools.Utils;
 import javafx.application.Application;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.event.Event;
@@ -56,6 +58,9 @@ public class FileBrowser extends Application {
 
 	vd = new VirtualDrive();
 	vd.readFromFile("C:/FILEINFOS/localFilesystem/DEPTH4.csv");
+	long volSize = vd.getRootFolder().calcSize();
+	System.out.println("VOLSIZE: "+Utils.readableSize(volSize));
+	
     FileTreeItem root = new FileTreeItem(vd.getRootFolder());
  
     final TreeTableView<BaseInfo> treeTableView = new TreeTableView<>();
@@ -115,7 +120,8 @@ public class FileBrowser extends Application {
 
     sizeColumn.setCellValueFactory(cellData -> {
       FileTreeItem item = ((FileTreeItem)cellData.getValue());
-      String s = item.isLeaf() ? numberFormat.format(item.length()) : "";
+//      String s = item.isLeaf() ? numberFormat.format(item.length()) : "";
+      String s = numberFormat.format(item.length());
       return new ReadOnlyObjectWrapper<String>(s);
     });
 
@@ -215,7 +221,7 @@ public class FileBrowser extends Application {
           }
           getChildren().sort((ti1, ti2) -> {
             return ((FileTreeItem)ti1).isDirectory() == ((FileTreeItem)ti2).isDirectory() ?
-              ti1.getValue().getName().compareToIgnoreCase(ti2.getValue().getName()) :
+              Long.compare(ti2.getValue().size, ti1.getValue().size) :
               ((FileTreeItem)ti1).isDirectory() ? -1 : 1;
           });
         }

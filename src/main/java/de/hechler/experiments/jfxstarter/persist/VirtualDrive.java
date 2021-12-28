@@ -68,7 +68,7 @@ public class VirtualDrive {
 		long duplicates = 0;
 		long nettosize = 0;
 		for (Entry<String, List<FileInfo>> entry:hashes.entrySet()) {
-			long filesize = entry.getValue().get(0).filesize;
+			long filesize = entry.getValue().get(0).size;
 			nettosize += filesize;
 			duplicates += filesize * (entry.getValue().size()-1); 
 		}
@@ -76,11 +76,6 @@ public class VirtualDrive {
 		System.out.println("Dulicates: "+Utils.readableSize(duplicates));
 		System.out.println(watch.getSecondsAndReset()+"s");
 		System.out.println(Utils.getMemoryInfo());
-	}
-
-	public static void main(String[] args) {
-		VirtualDrive vd = new VirtualDrive();
-		vd.readFromFile("C:/FILEINFOS/localFilesystem/SG-BKpl-10TB-abc.csv");
 	}
 
 	public FolderInfo getFolderByID(long folderID) {
@@ -94,5 +89,6 @@ public class VirtualDrive {
 	public List<FileInfo> getFilesBySHA256(String sha256) {
 		return hashes.get(sha256);
 	}
-	
+
+
 }

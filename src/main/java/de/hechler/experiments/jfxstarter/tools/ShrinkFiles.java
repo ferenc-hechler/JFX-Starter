@@ -49,7 +49,7 @@ public class ShrinkFiles {
 		}
 		for (long fileID:fileIDs) {
 			FileInfo file = vd.getFileByID(fileID);
-			result.add(FileFolderInfoDAO.createFileInfo(fileID, file.parentFolder.id, file.name, file.created, file.lastModified, file.filesize, file.hash, file.sha256));
+			result.add(FileFolderInfoDAO.createFileInfo(fileID, file.parentFolder.id, file.name, file.created, file.lastModified, file.size, file.hash, file.sha256));
 		}
 		return result;
 	}
