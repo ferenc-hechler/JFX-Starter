@@ -40,7 +40,7 @@ public class FileBrowser extends Application {
 
   private TreeTableView<File> createFileBrowserTreeTableView() {
 
-    FileTreeItem root = new FileTreeItem(new File("/"));
+    FileTreeItem root = new FileTreeItem(new File("D:/"));
  
     final TreeTableView<File> treeTableView = new TreeTableView<>();
 

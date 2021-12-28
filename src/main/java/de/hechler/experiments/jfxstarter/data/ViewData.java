@@ -1,4 +1,4 @@
-package de.hechler.experiments.jfxstarter.gui;
+package de.hechler.experiments.jfxstarter.data;
 
 import java.util.Date;
 

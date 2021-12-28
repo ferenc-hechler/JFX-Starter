@@ -2,6 +2,7 @@ package de.hechler.experiments.jfxstarter.gui;
 
 import java.util.Date;
 
+import de.hechler.experiments.jfxstarter.data.ViewData;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.event.ActionEvent;
