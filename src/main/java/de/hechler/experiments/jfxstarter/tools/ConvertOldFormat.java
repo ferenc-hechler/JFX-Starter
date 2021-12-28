@@ -154,13 +154,13 @@ public class ConvertOldFormat {
 
 
 	private FileFolderInfoDAO convertFile(FileInfo file) {
-		return FileFolderInfoDAO.createFileInfo(file.fileID, file.parentFolder.folderID, file.name, null, file.lastModified, file.filesize, null, file.sha256);
+		return FileFolderInfoDAO.createFileInfo(file.id, file.parentFolder.id, file.name, null, file.lastModified, file.filesize, null, file.sha256);
 	}
 
 
 	private FileFolderInfoDAO convertFolder(FolderInfo folder) {
-		Long parentFolderID = folder.parentFolder==null ? null : folder.parentFolder.folderID;
-		FileFolderInfoDAO result = FileFolderInfoDAO.createFolderInfo(folder.folderID, parentFolderID, folder.name, null, null);
+		Long parentFolderID = folder.parentFolder==null ? null : folder.parentFolder.id;
+		FileFolderInfoDAO result = FileFolderInfoDAO.createFolderInfo(folder.id, parentFolderID, folder.name, null, null);
 		return result;
 	}
 

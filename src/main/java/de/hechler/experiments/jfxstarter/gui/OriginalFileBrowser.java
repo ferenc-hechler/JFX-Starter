@@ -1,42 +1,28 @@
 package de.hechler.experiments.jfxstarter.gui;
 
-import java.io.File;
-import java.text.NumberFormat;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-
-import de.hechler.experiments.jfxstarter.persist.BaseInfo;
-import de.hechler.experiments.jfxstarter.persist.VirtualDrive;
-import javafx.application.Application;
-import javafx.beans.property.ReadOnlyObjectWrapper;
-import javafx.event.Event;
-import javafx.event.EventHandler;
-import javafx.geometry.Insets;
-import javafx.geometry.Pos;
-import javafx.scene.Scene;
-import javafx.scene.control.Label;
-import javafx.scene.control.TreeItem;
-import javafx.scene.control.TreeTableCell;
-import javafx.scene.control.TreeTableColumn;
-import javafx.scene.control.TreeTableView;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
-import javafx.scene.layout.BorderPane;
-import javafx.stage.Stage;
-import javafx.util.Callback;
+import java.io.*;
+import java.util.*;
+import java.text.*;
+import javafx.application.*;
+import javafx.stage.*;
+import javafx.scene.*;
+import javafx.scene.control.*;
+import javafx.scene.image.*;
+import javafx.scene.layout.*;
+import javafx.geometry.*;
+import javafx.event.*;
+import javafx.collections.*;
+import javafx.beans.property.*;
+import javafx.util.*;
 
 /** from: https://yumberc.github.io/FileBrowser/FileBrowser.html */
-public class FileBrowser extends Application {
-  
-  private VirtualDrive vd;
+public class OriginalFileBrowser extends Application {
 
   SimpleDateFormat dateFormat = new SimpleDateFormat();
   NumberFormat numberFormat = NumberFormat.getIntegerInstance();
 
   Label label;
-  TreeTableView<BaseInfo> treeTableView;
+  TreeTableView<File> treeTableView;
 
   @Override
   public void start(Stage stage) {
@@ -52,20 +38,18 @@ public class FileBrowser extends Application {
     stage.show();
   }
 
-  private TreeTableView<BaseInfo> createFileBrowserTreeTableView() {
+  private TreeTableView<File> createFileBrowserTreeTableView() {
 
-	vd = new VirtualDrive();
-	vd.readFromFile("C:/FILEINFOS/localFilesystem/DEPTH4.csv");
-    FileTreeItem root = new FileTreeItem(vd.getRootFolder());
+    FileTreeItem root = new FileTreeItem(new File("D:/"));
  
-    final TreeTableView<BaseInfo> treeTableView = new TreeTableView<>();
+    final TreeTableView<File> treeTableView = new TreeTableView<>();
 
     treeTableView.setShowRoot(true);
     treeTableView.setRoot(root);
     root.setExpanded(true);
     treeTableView.setColumnResizePolicy(TreeTableView.CONSTRAINED_RESIZE_POLICY);
 
-    TreeTableColumn<BaseInfo, FileTreeItem> nameColumn = new TreeTableColumn<>("Name");
+    TreeTableColumn<File, FileTreeItem> nameColumn = new TreeTableColumn<>("Name");
 
     nameColumn.setCellValueFactory(cellData -> 
       new ReadOnlyObjectWrapper<FileTreeItem>((FileTreeItem)cellData.getValue())
@@ -76,7 +60,7 @@ public class FileBrowser extends Application {
     Image image3 = getImageResource("img/folder-close-16x16.png");
 
     nameColumn.setCellFactory(column -> {
-      TreeTableCell<BaseInfo, FileTreeItem> cell = new TreeTableCell<BaseInfo, FileTreeItem>() {
+      TreeTableCell<File, FileTreeItem> cell = new TreeTableCell<File, FileTreeItem>() {
 
         ImageView imageView1 = new ImageView(image1);
         ImageView imageView2 = new ImageView(image2);
@@ -91,10 +75,10 @@ public class FileBrowser extends Application {
             setGraphic(null);
             setStyle("");
           } else {
-            BaseInfo f = item.getValue();
-            String text = f.getParentFolder() == null ? File.separator : f.getName();
+            File f = item.getValue();
+            String text = f.getParentFile() == null ? File.separator : f.getName();
             setText(text);
-            String style = item.isHidden() && f.getParentFolder() != null ? "-fx-accent" : "-fx-text-base-color";
+            String style = item.isHidden() && f.getParentFile() != null ? "-fx-accent" : "-fx-text-base-color";
             setStyle("-fx-text-fill: " + style);
             if (item.isLeaf()) {
               setGraphic(imageView1);
@@ -111,7 +95,7 @@ public class FileBrowser extends Application {
     nameColumn.setSortable(false);
     treeTableView.getColumns().add(nameColumn);
 
-    TreeTableColumn<BaseInfo, String> sizeColumn = new TreeTableColumn<>("Size");
+    TreeTableColumn<File, String> sizeColumn = new TreeTableColumn<>("Size");
 
     sizeColumn.setCellValueFactory(cellData -> {
       FileTreeItem item = ((FileTreeItem)cellData.getValue());
@@ -119,9 +103,9 @@ public class FileBrowser extends Application {
       return new ReadOnlyObjectWrapper<String>(s);
     });
 
-    Callback<TreeTableColumn<BaseInfo, String>,TreeTableCell<BaseInfo, String>> sizeCellFactory = sizeColumn.getCellFactory();
+    Callback<TreeTableColumn<File, String>,TreeTableCell<File, String>> sizeCellFactory = sizeColumn.getCellFactory();
     sizeColumn.setCellFactory(column -> {
-      TreeTableCell<BaseInfo, String> cell = sizeCellFactory.call(column);
+      TreeTableCell<File, String> cell = sizeCellFactory.call(column);
       cell.setAlignment(Pos.CENTER_RIGHT);
       cell.setPadding(new Insets(0, 8, 0, 0));
       return cell;
@@ -131,7 +115,7 @@ public class FileBrowser extends Application {
     sizeColumn.setSortable(false);
     treeTableView.getColumns().add(sizeColumn);
 
-    TreeTableColumn<BaseInfo, String> lastModifiedColumn = new TreeTableColumn<>("Last Modified");
+    TreeTableColumn<File, String> lastModifiedColumn = new TreeTableColumn<>("Last Modified");
     lastModifiedColumn.setCellValueFactory(cellData -> {
       FileTreeItem item = (FileTreeItem)cellData.getValue();
       String s = dateFormat.format(new Date(item.lastModified()));
@@ -143,8 +127,7 @@ public class FileBrowser extends Application {
     treeTableView.getColumns().add(lastModifiedColumn);
 
     treeTableView.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
-      String absPath = newValue.getValue().getName();
-      label.setText(newValue != null ? absPath : "");
+      label.setText(newValue != null ? newValue.getValue().getAbsolutePath() : "");
     });
 
     treeTableView.getSelectionModel().selectFirst();
@@ -158,23 +141,23 @@ public class FileBrowser extends Application {
     return img;
   }
 
-  private class FileTreeItem extends TreeItem<BaseInfo> {
+  private class FileTreeItem extends TreeItem<File> {
     private boolean expanded = false;
     private boolean directory;
     private boolean hidden;
     private long length;
     private long lastModified;
 
-    FileTreeItem(BaseInfo fileOrfolder) {
-      super(fileOrfolder);
-      EventHandler<TreeModificationEvent<BaseInfo>> eventHandler = event -> changeExpand();
+    FileTreeItem(File file) {
+      super(file);
+      EventHandler<TreeModificationEvent<File>> eventHandler = event -> changeExpand();
       addEventHandler(TreeItem.branchExpandedEvent(), eventHandler);
       addEventHandler(TreeItem.branchCollapsedEvent(), eventHandler);
 
-      directory = getValue().isFolder();
-      hidden = false;
-      length = getValue().getSize();
-      lastModified = getValue().getLastModified();
+      directory = getValue().isDirectory();
+      hidden = getValue().isHidden();
+      length = getValue().length();
+      lastModified = getValue().lastModified();
     }
 
     private void changeExpand() {
@@ -202,15 +185,10 @@ public class FileBrowser extends Application {
 
     private void createChildren() {
       if (isDirectory() && getValue() != null) {
-        
-    	// File[] files = getValue().listFiles();
-      	List<BaseInfo> files = new ArrayList<>();
-      	files.addAll(getValue().asFolderInfo().getChildFiles());
-    	files.addAll(getValue().asFolderInfo().getChildFolders());
-
-    	if (files != null && files.size() > 0) {
+        File[] files = getValue().listFiles();
+        if (files != null && files.length > 0) {
           getChildren().clear();
-          for (BaseInfo childFile : files) {
+          for (File childFile : files) {
             getChildren().add(new FileTreeItem(childFile));
           }
           getChildren().sort((ti1, ti2) -> {

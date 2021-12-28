@@ -2,11 +2,8 @@ package de.hechler.experiments.jfxstarter.persist;
 
 import java.util.Date;
 
-public class FileInfo {
+public class FileInfo extends BaseInfo {
 	
-	public FolderInfo parentFolder;
-	public long fileID;
-	public String name;
 	public long filesize;
 	public Date lastModified;
 	public String sha256;
@@ -14,9 +11,7 @@ public class FileInfo {
 	public String hash;
 	
 	public FileInfo(long fileID, String name, long filesize, Date lastModified, String sha256) {
-		this.parentFolder = null;
-		this.fileID = fileID;
-		this.name = name;
+		super(fileID, name);
 		this.filesize = filesize;
 		this.lastModified = lastModified;
 		this.sha256 = sha256;
@@ -26,15 +21,18 @@ public class FileInfo {
 
 	
 	public FileInfo(long fileID, String name, long filesize, Date lastModified, String sha256, Date created, String hash) {
-		this.parentFolder = null;
-		this.fileID = fileID;
-		this.name = name;
+		super(fileID, name);
 		this.filesize = filesize;
 		this.lastModified = lastModified;
 		this.sha256 = sha256;
 		this.created = created;
 		this.hash = hash;
 	}
+
+	public boolean isFile() { return true; }
+	public FileInfo asFileInfo() { return this; }
+	public long getSize() { return filesize; }
+	public long getLastModified() { return lastModified.getTime(); }
 
 	@Override
 	public String toString() {

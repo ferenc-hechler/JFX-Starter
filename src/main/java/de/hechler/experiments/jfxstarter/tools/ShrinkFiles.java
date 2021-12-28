@@ -30,9 +30,9 @@ public class ShrinkFiles {
 	
 	
 	private void recursiveAddFolders(FolderInfo folder, int depth) {
-		folderIDs.add(folder.folderID);
+		folderIDs.add(folder.id);
 		for (FileInfo file:folder.getChildFiles()) {
-			fileIDs.add(file.fileID);
+			fileIDs.add(file.id);
 		}
 		if (depth > 1) {
 			for (FolderInfo childFolder:folder.getChildFolders()) {
@@ -49,7 +49,7 @@ public class ShrinkFiles {
 		}
 		for (long fileID:fileIDs) {
 			FileInfo file = vd.getFileByID(fileID);
-			result.add(FileFolderInfoDAO.createFileInfo(fileID, file.parentFolder.folderID, file.name, file.created, file.lastModified, file.filesize, file.hash, file.sha256));
+			result.add(FileFolderInfoDAO.createFileInfo(fileID, file.parentFolder.id, file.name, file.created, file.lastModified, file.filesize, file.hash, file.sha256));
 		}
 		return result;
 	}

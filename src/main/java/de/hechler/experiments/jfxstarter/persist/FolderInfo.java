@@ -3,19 +3,13 @@ package de.hechler.experiments.jfxstarter.persist;
 import java.util.ArrayList;
 import java.util.List;
 
-public class FolderInfo {
-	
-	public FolderInfo parentFolder;
-	public long folderID;
-	public String name;
+public class FolderInfo extends BaseInfo {
 	
 	private List<FolderInfo> childFolders;
 	private List<FileInfo> childFiles;
 	
 	public FolderInfo(long folderID, String name) {
-		this.parentFolder = null;
-		this.folderID = folderID;
-		this.name = name;
+		super(folderID, name);
 		this.childFolders = new ArrayList<>();
 		this.childFiles = new ArrayList<>();
 	}
@@ -41,12 +35,15 @@ public class FolderInfo {
 		if (parentFolder == null) {
 			return null;
 		}
-		return parentFolder.folderID;
+		return parentFolder.id;
 	}
 
+	public boolean isFolder() { return true; }
+	public FolderInfo asFolderInfo() { return this; }
+	
 	@Override
 	public String toString() {
-		return "Folder("+name+"|"+folderID+")";
+		return "Folder("+name+"|"+id+")";
 	}
 	
 }
