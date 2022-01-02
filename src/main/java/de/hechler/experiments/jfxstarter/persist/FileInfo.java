@@ -10,7 +10,7 @@ public class FileInfo extends BaseInfo {
 	public String hash;
 	
 	public FileInfo(long fileID, String name, long filesize, Date lastModified, String sha256) {
-		super(fileID, name, filesize);
+		super(fileID, name, filesize, -1);
 		this.lastModified = lastModified;
 		this.sha256 = sha256;
 		this.created = null;
@@ -19,7 +19,7 @@ public class FileInfo extends BaseInfo {
 
 	
 	public FileInfo(long fileID, String name, long filesize, Date lastModified, String sha256, Date created, String hash) {
-		super(fileID, name, filesize);
+		super(fileID, name, filesize, 0);
 		this.lastModified = lastModified;
 		this.sha256 = sha256;
 		this.created = created;
@@ -31,12 +31,9 @@ public class FileInfo extends BaseInfo {
 	public long getLastModified() { return lastModified.getTime(); }
 	
 	@Override public long calcSize() { return size; }
-	
+	@Override public long calcDuplicateSize() { return isDuplicate() ? size : 0; }
 
-	@Override
-	public String toString() {
-		return "File("+name+"|"+size+")";
-	}
+	@Override public String toString() { return "File("+name+"|"+size+")"; }
 
 
 

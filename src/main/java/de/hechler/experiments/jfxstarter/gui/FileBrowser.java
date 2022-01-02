@@ -58,8 +58,11 @@ public class FileBrowser extends Application {
 
 	vd = new VirtualDrive();
 	vd.readFromFile("C:/FILEINFOS/localFilesystem/DEPTH4.csv");
+//	vd.readFromFile("C:/FILEINFOS/localFilesystem/FULL.csv");
 	long volSize = vd.getRootFolder().calcSize();
 	System.out.println("VOLSIZE: "+Utils.readableSize(volSize));
+	long dupSize = vd.getRootFolder().calcDuplicateSize();
+	System.out.println("DUPSIZE: "+Utils.readableSize(dupSize));
 	
     FileTreeItem root = new FileTreeItem(vd.getRootFolder());
  
@@ -99,7 +102,7 @@ public class FileBrowser extends Application {
             BaseInfo f = item.getValue();
             String text = f.getParentFolder() == null ? File.separator : f.getName();
             setText(text);
-            String style = item.isHidden() && f.getParentFolder() != null ? "-fx-accent" : "-fx-text-base-color";
+            String style = item.isDuplicate() && f.getParentFolder() != null ? "-fx-accent" : "-fx-text-base-color";
             setStyle("-fx-text-fill: " + style);
             if (item.isLeaf()) {
               setGraphic(imageView1);
@@ -137,6 +140,27 @@ public class FileBrowser extends Application {
     sizeColumn.setSortable(false);
     treeTableView.getColumns().add(sizeColumn);
 
+    TreeTableColumn<BaseInfo, String> duplicateColumn = new TreeTableColumn<>("Duplicate");
+
+    duplicateColumn.setCellValueFactory(cellData -> {
+      FileTreeItem item = ((FileTreeItem)cellData.getValue());
+//      String s = item.isLeaf() ? numberFormat.format(item.length()) : "";
+      String s = numberFormat.format(item.duplicateSize());
+      return new ReadOnlyObjectWrapper<String>(s);
+    });
+
+    Callback<TreeTableColumn<BaseInfo, String>,TreeTableCell<BaseInfo, String>> duplicateCellFactory = duplicateColumn.getCellFactory();
+    duplicateColumn.setCellFactory(column -> {
+      TreeTableCell<BaseInfo, String> cell = duplicateCellFactory.call(column);
+      cell.setAlignment(Pos.CENTER_RIGHT);
+      cell.setPadding(new Insets(0, 8, 0, 0));
+      return cell;
+    });
+
+    duplicateColumn.setPrefWidth(100);
+    duplicateColumn.setSortable(false);
+    treeTableView.getColumns().add(duplicateColumn);
+
     TreeTableColumn<BaseInfo, String> lastModifiedColumn = new TreeTableColumn<>("Last Modified");
     lastModifiedColumn.setCellValueFactory(cellData -> {
       FileTreeItem item = (FileTreeItem)cellData.getValue();
@@ -167,8 +191,9 @@ public class FileBrowser extends Application {
   private class FileTreeItem extends TreeItem<BaseInfo> {
     private boolean expanded = false;
     private boolean directory;
-    private boolean hidden;
+    private boolean duplicate;
     private long length;
+    private long duplicateSize;
     private long lastModified;
 
     FileTreeItem(BaseInfo fileOrfolder) {
@@ -178,8 +203,9 @@ public class FileBrowser extends Application {
       addEventHandler(TreeItem.branchCollapsedEvent(), eventHandler);
 
       directory = getValue().isFolder();
-      hidden = false;
+      duplicate = false;
       length = getValue().getSize();
+      duplicateSize = getValue().getDuplicateSize();
       lastModified = getValue().getLastModified();
     }
 
@@ -204,7 +230,8 @@ public class FileBrowser extends Application {
     public boolean isDirectory() { return directory; }
     public long lastModified() { return lastModified; }
     public long length() { return length; }
-    public boolean isHidden() { return hidden; }
+    public long duplicateSize() { return duplicateSize; }
+    public boolean isDuplicate() { return duplicate; }
 
     private void createChildren() {
       if (isDirectory() && getValue() != null) {

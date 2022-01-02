@@ -9,7 +9,7 @@ public class FolderInfo extends BaseInfo {
 	private List<FileInfo> childFiles;
 	
 	public FolderInfo(long folderID, String name) {
-		super(folderID, name, -1);
+		super(folderID, name, -1, -1);
 		this.childFolders = new ArrayList<>();
 		this.childFiles = new ArrayList<>();
 	}
@@ -55,10 +55,25 @@ public class FolderInfo extends BaseInfo {
 		return size;
 	}
 	
+	@Override
+	public long calcDuplicateSize() {
+		if (duplicateSize == -1) {
+			long result = 0;
+			for (FileInfo child:childFiles) {
+				result += child.calcDuplicateSize(); 
+			}
+			for (FolderInfo child:childFolders) {
+				result += child.calcDuplicateSize(); 
+			}
+			duplicateSize = result;
+		}
+		return duplicateSize;
+	}
+	
 	
 	@Override
 	public String toString() {
 		return "Folder("+name+"|"+id+")";
 	}
-	
+
 }
