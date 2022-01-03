@@ -1,8 +1,13 @@
 package de.hechler.experiments.jfxstarter.persist;
 
 import java.util.Date;
+import java.util.List;
 
 public abstract class BaseInfo {
+	
+	public static interface Collector<U> {
+		public U visit(BaseInfo f, List<U> childInfos);
+	}
 	
 	public FolderInfo parentFolder;
 	public long id;
@@ -10,9 +15,7 @@ public abstract class BaseInfo {
 	public long size;
 	public Date created;
 	public Date lastModified;
-	
-	public long duplicateSize;
-	public boolean duplicate;
+	public Object data;
 	
 	public BaseInfo(long id, String name, long size, Date created, Date lastModified) {
 		this.parentFolder = null;
@@ -21,17 +24,13 @@ public abstract class BaseInfo {
 		this.size = size;
 		this.created = created;
 		this.lastModified = lastModified;
-		
-		this.duplicateSize = -1;
-		this.duplicate = false;
+		this.data = null;
 	}
 
 	public long getId() { return id; }
 	public String getName() { return name; }
 	public long getSize() { return size; }
-	public long getDuplicateSize() { return duplicateSize; }
 	public FolderInfo getParentFolder() { return parentFolder; }
-	public boolean isDuplicate() { return duplicate; }
 	public boolean isFile() { return false; }
 	public boolean isFolder() { return false; }
 	public FileInfo asFileInfo() { return null; }
@@ -39,8 +38,9 @@ public abstract class BaseInfo {
 
 	public long getLastModified() { return lastModified==null ? 0 : lastModified.getTime(); }
 	public long getCreated() { return created==null ? 0 : created.getTime(); }
-
-	public abstract long calcSize();
-	public abstract long calcDuplicateSize();
+	
+	@SuppressWarnings("unchecked")
+	public <T> T getData() { return (T)data; }
+	public <T> void setData(T newData) { this.data = newData; }
 	
 }

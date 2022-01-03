@@ -113,26 +113,6 @@ public class VirtualDrive {
 		return hashes.keySet();
 	}
 
-	public void markDuplicateFiles(final Set<String> sha256Hashes) {
-		filesByID.values().forEach(file -> {
-			if (sha256Hashes.contains(file.sha256)) {
-				file.duplicate = true;
-				file.duplicateSize = file.size;
-			}
-		});
-	}
-
-	public void removeDuplicateSizes() {
-		filesByID.values().forEach(file -> {
-			if (file.isDuplicate()) {
-				file.size = 0;
-			}
-		});
-		foldersByID.values().forEach(folder -> {
-			folder.size -= folder.duplicateSize;
-		});
-	}
-
 	public long findMaxID() {
 		final long[] result = {-1L};
 		foldersByID.keySet().forEach(id -> result[0] = Math.max(result[0], id));

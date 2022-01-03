@@ -70,11 +70,11 @@ public class MergeFiles {
 	}
 	
 	public static void main(String[] args) {
-//		String csv1 = "C:\\Users\\feri\\git\\JFX-Starter\\out\\backup-99_BK2-4T_BILDER_2007_2007_07_23.csv";
-//		String csv2 = "C:\\Users\\feri\\git\\JFX-Starter\\out\\backup-99_BK2-4T_BILDER_2007_2007_07_24.csv";
-		String csv1 = "out/merged.csv";
-		String csv2 = "C:\\FILEINFOS\\bin\\files-G._99_int-Daten_D_AI_AIAnfrage.csv";
-		String outcsv = "out/merged.csv";
+		String csv1 = "C:\\Users\\feri\\git\\JFX-Starter\\out\\backup-99_BK2-4T_BILDER_2007_2007_07_23.csv";
+		String csv2 = "C:\\Users\\feri\\git\\JFX-Starter\\out\\backup-99_BK2-4T_BILDER_2007_2007_07_24.csv";
+//		String csv1 = "C:\\FILEINFOS\\backupDrive\\files-G._99_BK3-4T.csv";
+//		String csv2 = "C:\\FILEINFOS\\backupDrive\\files-G._99_BK2-4T.csv";
+		String outcsv = "out/local-test.csv";
 		if (args.length>=2) {
 			csv1 = args[0];
 			csv2 = args[1];

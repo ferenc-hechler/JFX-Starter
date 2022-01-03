@@ -6,6 +6,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Set;
 
 import de.hechler.experiments.jfxstarter.persist.BaseInfo;
 import de.hechler.experiments.jfxstarter.persist.VirtualDrive;
@@ -58,6 +59,10 @@ public class FileBrowser extends Application {
     stage.show();
   }
 
+  /**
+   * from: https://docs.oracle.com/javafx/2/layout/builtin_layouts.htm
+   * @return top level elements.
+   */
   private HBox addHBox() {
 	    HBox hbox = new HBox();
 	    hbox.setPadding(new Insets(15, 12, 15, 12));
@@ -77,17 +82,16 @@ public class FileBrowser extends Application {
   private TreeTableView<BaseInfo> createFileBrowserTreeTableView() {
 
 	vdBackup = new VirtualDrive();
-	vdBackup.readFromFile("C:/FILEINFOS/pCloud/pCloud.csv");
+//	vdBackup.readFromFile("C:/FILEINFOS/pCloud/pCloud.csv");
+	vdBackup.readFromFile("out/dev-test-auswahl.csv");
 	vdCloud= new VirtualDrive();
 //	vdCloud.readFromFile("C:/FILEINFOS/backupDrive/FULL.csv");
 //	vdCloud.readFromFile("C:/FILEINFOS/backupDrive/DEPTH4.csv");
-	vdCloud.readFromFile("C:\\Users\\feri\\git\\JFX-Starter\\out\\merged.csv");
-	long volSize = vdCloud.getRootFolder().calcSize();
+//	vdCloud.readFromFile("C:\\FILEINFOS\\backupDrive\\merged.csv");
+	vdCloud.readFromFile("out/dev-test.csv");
+	long volSize = vdCloud.getRootFolder().calcFolderSizes();
 	System.out.println("VOLSIZE: "+Utils.readableSize(volSize));
-	vdCloud.markDuplicateFiles(vdBackup.getSHA256Hashes());
-	long dupSize = vdCloud.getRootFolder().calcDuplicateSize();
-	System.out.println("DUPSIZE: "+Utils.readableSize(dupSize));
-	vdCloud.removeDuplicateSizes();
+	initGuiData();
 	
     FileTreeItem root = new FileTreeItem(vdCloud.getRootFolder());
  
@@ -207,7 +211,30 @@ public class FileBrowser extends Application {
     return treeTableView;
   }
 
-  private Image getImageResource(String name) {
+  private void initGuiData() {
+	final Set<String> sha256hashes = vdBackup.getSHA256Hashes();
+	vdCloud.getRootFolder().forEachFile(file -> {
+		if (sha256hashes.contains(file.sha256)) {
+			file.setData(new GuiData(file.size, 0));
+		}
+		else {
+			file.setData(new GuiData(0, file.size));
+		}
+	});
+	long dupSize = vdCloud.getRootFolder().recursiveCollect((f, childResult) -> {
+		if (f.isFile()) {
+			GuiData data = f.getData();
+			return data.duplicateSize;
+		}
+		Long[] sum = {0L};
+		childResult.forEach(n -> sum[0] += n);
+		f.setData(new GuiData(sum[0], f.size-sum[0]));
+		return sum[0];
+	});
+	System.out.println("DUPSIZE: "+Utils.readableSize(dupSize));
+  }
+
+private Image getImageResource(String name) {
     Image img = null;
     try { img = new Image(getClass().getResourceAsStream(name)); } catch (Exception e) {}
     return img;
@@ -228,9 +255,10 @@ public class FileBrowser extends Application {
       addEventHandler(TreeItem.branchCollapsedEvent(), eventHandler);
 
       directory = getValue().isFolder();
-      duplicate = getValue().isDuplicate();
-      length = getValue().getSize();
-      duplicateSize = getValue().getDuplicateSize();
+      GuiData guiData = getValue().getData();
+      duplicate = guiData.isDuplicate();
+      length = guiData.getEffectiveSize();
+      duplicateSize = guiData.getDuplicateSize();
       lastModified = getValue().getLastModified();
     }
 
@@ -273,7 +301,7 @@ public class FileBrowser extends Application {
           }
           getChildren().sort((ti1, ti2) -> {
             return ((FileTreeItem)ti1).isDirectory() == ((FileTreeItem)ti2).isDirectory() ?
-              Long.compare(ti2.getValue().size, ti1.getValue().size) :
+              Long.compare(((GuiData)ti2.getValue().getData()).getEffectiveSize(), ((GuiData)ti1.getValue().getData()).getEffectiveSize()) :
               ((FileTreeItem)ti1).isDirectory() ? -1 : 1;
           });
         }
