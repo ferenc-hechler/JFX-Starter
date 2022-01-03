@@ -80,6 +80,19 @@ public class VirtualDrive {
 		System.out.println(Utils.getMemoryInfo());
 	}
 
+	public void addFolder(FolderInfo folder) {
+		foldersByID.put(folder.id, folder);
+	}
+
+	public void addFile(FileInfo file) {
+		filesByID.put(file.id, file);
+		if (file.sha256 != null) {
+			hashes.computeIfAbsent(file.sha256, k -> new ArrayList<>()).add(file);
+		}
+	}
+
+
+	
 	public FolderInfo getFolderByID(long folderID) {
 		return foldersByID.get(folderID);
 	}
@@ -125,6 +138,19 @@ public class VirtualDrive {
 		foldersByID.keySet().forEach(id -> result[0] = Math.max(result[0], id));
 		filesByID.keySet().forEach(id -> result[0] = Math.max(result[0], id));
 		return result[0];
+	}
+	
+	public FileFolderInfoStore exportToStore() {
+		FileFolderInfoStore result = new FileFolderInfoStore();
+		for (long folderID:foldersByID.keySet()) {
+			FolderInfo folder = getFolderByID(folderID);
+			result.add(FileFolderInfoDAO.createFolderInfo(folderID, folder.getParentFolderID(), folder.name, folder.created, folder.lastModified));
+		}
+		for (long fileID:filesByID.keySet()) {
+			FileInfo file = getFileByID(fileID);
+			result.add(FileFolderInfoDAO.createFileInfo(fileID, file.parentFolder.id, file.name, file.created, file.lastModified, file.size, file.hash, file.sha256));
+		}
+		return result;
 	}
 
 }
