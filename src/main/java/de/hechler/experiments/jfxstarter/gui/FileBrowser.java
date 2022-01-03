@@ -4,7 +4,6 @@ import java.io.File;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
@@ -32,7 +31,8 @@ import javafx.util.Callback;
 /** from: https://yumberc.github.io/FileBrowser/FileBrowser.html */
 public class FileBrowser extends Application {
   
-  private VirtualDrive vd;
+  private VirtualDrive vdCloud;
+  private VirtualDrive vdBackup;
 
   SimpleDateFormat dateFormat = new SimpleDateFormat();
   NumberFormat numberFormat = NumberFormat.getIntegerInstance();
@@ -56,15 +56,20 @@ public class FileBrowser extends Application {
 
   private TreeTableView<BaseInfo> createFileBrowserTreeTableView() {
 
-	vd = new VirtualDrive();
-	vd.readFromFile("C:/FILEINFOS/localFilesystem/DEPTH4.csv");
-//	vd.readFromFile("C:/FILEINFOS/localFilesystem/FULL.csv");
-	long volSize = vd.getRootFolder().calcSize();
+	vdBackup = new VirtualDrive();
+	vdBackup.readFromFile("C:/FILEINFOS/pCloud/pCloud.csv");
+	vdCloud= new VirtualDrive();
+//	vdCloud.readFromFile("C:/FILEINFOS/backupDrive/FULL.csv");
+//	vdCloud.readFromFile("C:/FILEINFOS/backupDrive/DEPTH4.csv");
+	vdCloud.readFromFile("C:\\Users\\feri\\git\\JFX-Starter\\out\\local-test.csv");
+	long volSize = vdCloud.getRootFolder().calcSize();
 	System.out.println("VOLSIZE: "+Utils.readableSize(volSize));
-	long dupSize = vd.getRootFolder().calcDuplicateSize();
+	vdCloud.markDuplicateFiles(vdBackup.getSHA256Hashes());
+	long dupSize = vdCloud.getRootFolder().calcDuplicateSize();
 	System.out.println("DUPSIZE: "+Utils.readableSize(dupSize));
+	vdCloud.removeDuplicateSizes();
 	
-    FileTreeItem root = new FileTreeItem(vd.getRootFolder());
+    FileTreeItem root = new FileTreeItem(vdCloud.getRootFolder());
  
     final TreeTableView<BaseInfo> treeTableView = new TreeTableView<>();
 
@@ -102,7 +107,7 @@ public class FileBrowser extends Application {
             BaseInfo f = item.getValue();
             String text = f.getParentFolder() == null ? File.separator : f.getName();
             setText(text);
-            String style = item.isDuplicate() && f.getParentFolder() != null ? "-fx-accent" : "-fx-text-base-color";
+            String style = item.isDuplicate() && f.getParentFolder() != null ? "red" /* "-fx-accent" */ : "-fx-text-base-color" ;
             setStyle("-fx-text-fill: " + style);
             if (item.isLeaf()) {
               setGraphic(imageView1);
@@ -203,7 +208,7 @@ public class FileBrowser extends Application {
       addEventHandler(TreeItem.branchCollapsedEvent(), eventHandler);
 
       directory = getValue().isFolder();
-      duplicate = false;
+      duplicate = getValue().isDuplicate();
       length = getValue().getSize();
       duplicateSize = getValue().getDuplicateSize();
       lastModified = getValue().getLastModified();

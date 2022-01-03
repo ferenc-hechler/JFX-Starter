@@ -31,7 +31,7 @@ public class FileInfo extends BaseInfo {
 	public long getLastModified() { return lastModified.getTime(); }
 	
 	@Override public long calcSize() { return size; }
-	@Override public long calcDuplicateSize() { return isDuplicate() ? size : 0; }
+	@Override public long calcDuplicateSize() { return duplicateSize; }
 
 	@Override public String toString() { return "File("+name+"|"+size+")"; }
 

@@ -6,6 +6,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import de.hechler.experiments.jfxstarter.tools.StopWatch;
 import de.hechler.experiments.jfxstarter.tools.Utils;
@@ -41,7 +42,8 @@ public class VirtualDrive {
 			if (fileFolderInfo.type == 'd') {
 				FolderInfo folder = new FolderInfo(fileFolderInfo.id, fileFolderInfo.name);
 				foldersByID.put(fileFolderInfo.id, folder);
-				if (fileFolderInfo.parentFolderId == null) {
+				if ((fileFolderInfo.parentFolderId == null) || (fileFolderInfo.parentFolderId == fileFolderInfo.id)) {
+					fileFolderInfo.parentFolderId = null;
 					rootFolder = folder; 
 				}
 				else {
@@ -88,6 +90,34 @@ public class VirtualDrive {
 	
 	public List<FileInfo> getFilesBySHA256(String sha256) {
 		return hashes.get(sha256);
+	}
+
+	public boolean containsSHA256(String sha256) {
+		return hashes.containsKey(sha256);
+	}
+
+	public Set<String> getSHA256Hashes() {
+		return hashes.keySet();
+	}
+
+	public void markDuplicateFiles(final Set<String> sha256Hashes) {
+		filesByID.values().forEach(file -> {
+			if (sha256Hashes.contains(file.sha256)) {
+				file.duplicate = true;
+				file.duplicateSize = file.size;
+			}
+		});
+	}
+
+	public void removeDuplicateSizes() {
+		filesByID.values().forEach(file -> {
+			if (file.isDuplicate()) {
+				file.size = 0;
+			}
+		});
+		foldersByID.values().forEach(folder -> {
+			folder.size -= folder.duplicateSize;
+		});
 	}
 
 

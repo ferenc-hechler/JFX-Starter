@@ -1,5 +1,10 @@
 package de.hechler.experiments.jfxstarter.tools;
 
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.text.DecimalFormat;
 
 public class Utils {
@@ -35,5 +40,31 @@ public class Utils {
 	public static String round2(double d) {
 		return ROUND2.format(d); 
 	}
-		
+
+    public static String calcSHA256(Path file) {
+	    MessageDigest md;
+		try {
+			md = MessageDigest.getInstance("SHA-256");
+			byte[] buf = new byte[65536];
+		    try (FileInputStream in = new FileInputStream(file.toFile())) {
+			    while (true) {
+			    	int cnt = in.read(buf);
+			    	if (cnt <= 0) {
+			    		break;
+			    	}
+			    	md.update(buf, 0, cnt);
+			    }
+				byte[] bytes = md.digest();
+		        StringBuilder result = new StringBuilder();
+		        for (byte b : bytes) {
+		            result.append(String.format("%02x", b));
+		        }
+		        return result.toString();
+			}
+		} catch (NoSuchAlgorithmException | IOException e) {
+			System.err.println("ERROR reading file '"+file+"': "+e.toString());
+			return null;
+		}
+    }
+	
 }
