@@ -40,7 +40,7 @@ public class VirtualDrive {
 		System.out.println(store.size()+" elements");
 		for (FileFolderInfoDAO fileFolderInfo:store.getFileFolderInfos()) {
 			if (fileFolderInfo.type == 'd') {
-				FolderInfo folder = new FolderInfo(fileFolderInfo.id, fileFolderInfo.name);
+				FolderInfo folder = new FolderInfo(fileFolderInfo.id, fileFolderInfo.name, fileFolderInfo.created, fileFolderInfo.lastModified);
 				foldersByID.put(fileFolderInfo.id, folder);
 				if ((fileFolderInfo.parentFolderId == null) || (fileFolderInfo.parentFolderId == fileFolderInfo.id)) {
 					fileFolderInfo.parentFolderId = null;
@@ -52,7 +52,7 @@ public class VirtualDrive {
 				}
 			}
 			else {
-				FileInfo file = new FileInfo(fileFolderInfo.id, fileFolderInfo.name, fileFolderInfo.filesize, fileFolderInfo.lastModified, fileFolderInfo.sha256, fileFolderInfo.created, fileFolderInfo.hash);
+				FileInfo file = new FileInfo(fileFolderInfo.id, fileFolderInfo.name, fileFolderInfo.filesize, fileFolderInfo.created, fileFolderInfo.lastModified, fileFolderInfo.sha256, fileFolderInfo.hash);
 				filesByID.put(fileFolderInfo.id, file);
 				FolderInfo parentFolder = foldersByID.get(fileFolderInfo.parentFolderId);
 				parentFolder.addFile(file);
@@ -120,5 +120,11 @@ public class VirtualDrive {
 		});
 	}
 
+	public long findMaxID() {
+		final long[] result = {-1L};
+		foldersByID.keySet().forEach(id -> result[0] = Math.max(result[0], id));
+		filesByID.keySet().forEach(id -> result[0] = Math.max(result[0], id));
+		return result[0];
+	}
 
 }

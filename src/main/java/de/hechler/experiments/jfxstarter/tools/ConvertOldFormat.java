@@ -77,7 +77,7 @@ public class ConvertOldFormat {
 					String filename = matcher.group(2);
 					long filesize = Long.parseLong(matcher.group(3));
 					Date lastModDate = sdf.parse(matcher.group(4));
-					FileInfo file = new FileInfo(fileID, filename, filesize, lastModDate, sha256);
+					FileInfo file = new FileInfo(fileID, filename, filesize, null, lastModDate, sha256, null);
 					files.add(file);
 					currentFolder.addFile(file);
 					
@@ -121,12 +121,12 @@ public class ConvertOldFormat {
 			if (result != null) {
 				return result;
 			}
-			result = new FolderInfo(++currentFolderID, "/");
+			result = new FolderInfo(++currentFolderID, "/", null, null);
 			foldersByFullPath.put(result.name, result);
 			return result;
 		}
 		FolderInfo parentFolder = getOrCreateFolderID(fullPath.substring(0, bsPos));
-		result = new FolderInfo(++currentFolderID, fullPath.substring(bsPos+1));
+		result = new FolderInfo(++currentFolderID, fullPath.substring(bsPos+1), null, null);
 		parentFolder.addFolder(result);
 		foldersByFullPath.put(fullPath, result);
 		return result;

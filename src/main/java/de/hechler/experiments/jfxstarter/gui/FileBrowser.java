@@ -59,15 +59,15 @@ public class FileBrowser extends Application {
 	vdBackup = new VirtualDrive();
 	vdBackup.readFromFile("C:/FILEINFOS/pCloud/pCloud.csv");
 	vdCloud= new VirtualDrive();
-//	vdCloud.readFromFile("C:/FILEINFOS/backupDrive/FULL.csv");
+	vdCloud.readFromFile("C:/FILEINFOS/backupDrive/FULL.csv");
 //	vdCloud.readFromFile("C:/FILEINFOS/backupDrive/DEPTH4.csv");
-	vdCloud.readFromFile("C:\\Users\\feri\\git\\JFX-Starter\\out\\local-test.csv");
+//	vdCloud.readFromFile("C:\\Users\\feri\\git\\JFX-Starter\\out\\local-test.csv");
 	long volSize = vdCloud.getRootFolder().calcSize();
 	System.out.println("VOLSIZE: "+Utils.readableSize(volSize));
 	vdCloud.markDuplicateFiles(vdBackup.getSHA256Hashes());
 	long dupSize = vdCloud.getRootFolder().calcDuplicateSize();
 	System.out.println("DUPSIZE: "+Utils.readableSize(dupSize));
-	vdCloud.removeDuplicateSizes();
+//	vdCloud.removeDuplicateSizes();
 	
     FileTreeItem root = new FileTreeItem(vdCloud.getRootFolder());
  

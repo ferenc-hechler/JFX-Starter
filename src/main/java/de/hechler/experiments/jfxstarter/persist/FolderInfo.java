@@ -1,6 +1,7 @@
 package de.hechler.experiments.jfxstarter.persist;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 public class FolderInfo extends BaseInfo {
@@ -8,8 +9,8 @@ public class FolderInfo extends BaseInfo {
 	private List<FolderInfo> childFolders;
 	private List<FileInfo> childFiles;
 	
-	public FolderInfo(long folderID, String name) {
-		super(folderID, name, -1, -1);
+	public FolderInfo(long folderID, String name, Date created, Date lastModified) {
+		super(folderID, name, -1, created, lastModified);
 		this.childFolders = new ArrayList<>();
 		this.childFiles = new ArrayList<>();
 	}
