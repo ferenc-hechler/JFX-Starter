@@ -17,6 +17,7 @@ import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeTableCell;
@@ -25,6 +26,7 @@ import javafx.scene.control.TreeTableView;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
 import javafx.util.Callback;
 
@@ -45,8 +47,10 @@ public class FileBrowser extends Application {
 
     label = new Label();
     treeTableView = createFileBrowserTreeTableView();
-
+    HBox hbox = addHBox();
+    
     BorderPane layout = new BorderPane();
+	layout.setTop(hbox);
     layout.setCenter(treeTableView);
     layout.setBottom(label);
 
@@ -54,6 +58,22 @@ public class FileBrowser extends Application {
     stage.show();
   }
 
+  private HBox addHBox() {
+	    HBox hbox = new HBox();
+	    hbox.setPadding(new Insets(15, 12, 15, 12));
+	    hbox.setSpacing(10);
+	    hbox.setStyle("-fx-background-color: #336699;");
+
+	    Button buttonCurrent = new Button("Images Only");
+	    buttonCurrent.setPrefSize(100, 20);
+
+	    Button buttonProjected = new Button("Ignore Duplicates");
+	    buttonProjected.setPrefSize(130, 20);
+	    hbox.getChildren().addAll(buttonCurrent, buttonProjected);
+
+	    return hbox;
+	}  
+  
   private TreeTableView<BaseInfo> createFileBrowserTreeTableView() {
 
 	vdBackup = new VirtualDrive();
