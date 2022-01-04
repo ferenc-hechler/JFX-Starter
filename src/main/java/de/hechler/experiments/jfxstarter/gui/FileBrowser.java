@@ -96,13 +96,13 @@ public class FileBrowser extends Application {
   private TreeTableView<BaseInfo> createFileBrowserTreeTableView() {
 
 	vdBackup = new VirtualDrive();
-//	vdBackup.readFromFile("C:/FILEINFOS/pCloud/pCloud.csv");
-	vdBackup.readFromFile("out/dev-test-auswahl.csv");
+	vdBackup.readFromFile("C:/FILEINFOS/pCloud/pCloud.csv");
+//	vdBackup.readFromFile("out/dev-test-auswahl.csv");
 	vdLocal= new VirtualDrive();
 //	vdLocal.readFromFile("C:/FILEINFOS/backupDrive/FULL.csv");
 //	vdLocal.readFromFile("C:/FILEINFOS/backupDrive/DEPTH4.csv");
-//	vdLocal.readFromFile("C:\\FILEINFOS\\backupDrive\\merged.csv");
-	vdLocal.readFromFile("out/dev-test.csv");
+	vdLocal.readFromFile("C:\\FILEINFOS\\backupDrive\\files-G.-merged.csv");
+//	vdLocal.readFromFile("out/dev-test.csv");
 	long volSize = vdLocal.getRootFolder().calcFolderSizes();
 	System.out.println("VOLSIZE: "+Utils.readableSize(volSize));
 	initGuiData();
@@ -216,7 +216,7 @@ public class FileBrowser extends Application {
     treeTableView.getColumns().add(lastModifiedColumn);
 
     treeTableView.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
-      String absPath = newValue.getValue().getName();
+      String absPath = newValue.getValue().getName() + " (" + numberFormat.format(newValue.getValue().getSize())+")";
       label.setText(newValue != null ? absPath : "");
     });
 
@@ -248,7 +248,7 @@ public class FileBrowser extends Application {
 	System.out.println("DUPSIZE: "+Utils.readableSize(dupSize));
   }
 
-  private final static Set<String> IMAGE_EXTENSIONS = new HashSet<>(Arrays.asList("bmp", "gif", "heic", "jpg", "jpeg", "png", "tga", "tif", "tiff"));
+  private final static Set<String> IMAGE_EXTENSIONS = new HashSet<>(Arrays.asList("avi", "bmp", "gif", "heic", "jpg", "jpeg", "mov", "mp4", "mpg", "mpeg", "png", "raw", "tga", "tif", "tiff"));
   
   private void recalcGuiData() {
 	vdLocal.getRootFolder().forEachFile(file -> {
