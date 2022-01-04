@@ -281,6 +281,7 @@ public class FileBrowser extends Application {
 			gd.duplicateSize = 0;
 		}
 	});
+	@SuppressWarnings("unused")
 	GuiData rootGD = vdLocal.getRootFolder().recursiveCollect((f, childData) -> {
 		GuiData gd = f.getData();
 		if (f.isFile()) {
