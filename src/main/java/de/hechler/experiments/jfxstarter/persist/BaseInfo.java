@@ -42,5 +42,12 @@ public abstract class BaseInfo {
 	@SuppressWarnings("unchecked")
 	public <T> T getData() { return (T)data; }
 	public <T> void setData(T newData) { this.data = newData; }
+
+	public String getFullName() { 
+		if (getParentFolder() != null) {
+			return getParentFolder().getFullName()+"/"+getName();
+		}
+		return "";
+	}
 	
 }

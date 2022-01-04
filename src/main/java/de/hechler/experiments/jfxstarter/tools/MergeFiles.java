@@ -70,10 +70,11 @@ public class MergeFiles {
 	}
 	
 	public static void main(String[] args) {
+		StopWatch watch = new StopWatch();
 //		String csv1 = "C:\\Users\\feri\\git\\JFX-Starter\\out\\backup-99_BK2-4T_BILDER_2007_2007_07_23.csv";
 //		String csv2 = "C:\\Users\\feri\\git\\JFX-Starter\\out\\backup-99_BK2-4T_BILDER_2007_2007_07_24.csv";
-		String csv1 = "C:\\FILEINFOS\\backupDrive\\merged.csv";
-		String csv2 = "C:\\FILEINFOS\\backupDrive\\files-G._99_BK1-4T.csv";
+		String csv1 = "C:\\FILEINFOS\\backupDrive\\files-G.-merged.csv";
+		String csv2 = "C:\\FILEINFOS\\backupDrive\\files-G._99_WD-Elements-2.csv";
 		String outcsv = "C:\\FILEINFOS\\backupDrive\\files-G.-merged.csv";
 		if (args.length>=2) {
 			csv1 = args[0];
@@ -90,6 +91,7 @@ public class MergeFiles {
 		merger.merge(vd2);
 		FileFolderInfoStore store = merger.exportToStore();
 		store.writeToFile(outcsv);
+		System.out.println("finished "+watch.getSeconds()+"s");
 	}
 
 

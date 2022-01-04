@@ -12,6 +12,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import de.hechler.experiments.jfxstarter.persist.BaseInfo;
+import de.hechler.experiments.jfxstarter.persist.FileInfo;
 import de.hechler.experiments.jfxstarter.persist.VirtualDrive;
 import de.hechler.experiments.jfxstarter.tools.Utils;
 import javafx.application.Application;
@@ -29,6 +30,7 @@ import javafx.scene.control.TreeTableColumn;
 import javafx.scene.control.TreeTableView;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.input.ContextMenuEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
@@ -48,6 +50,7 @@ public class FileBrowser extends Application {
   
   private boolean filterDuplicates = false;
   private boolean imagesOnly = false;
+  private long minFileSize = 0;
 
   @Override
   public void start(Stage stage) {
@@ -88,7 +91,16 @@ public class FileBrowser extends Application {
 	    	recalcGuiData();
 	    });
 	    buttonHideDupes.setPrefSize(130, 20);
-	    hbox.getChildren().addAll(buttonImagesOnly, buttonHideDupes);
+
+	    ToggleButton buttonFileSize = new ToggleButton("> 100kb");
+	    buttonFileSize.setOnAction(ae -> {
+	    	minFileSize = ((ToggleButton)ae.getSource()).isSelected() ? 100*1024 : 0;
+	    	recalcGuiData();
+	    });
+	    buttonFileSize.setPrefSize(100, 20);
+
+	    
+	    hbox.getChildren().addAll(buttonImagesOnly, buttonHideDupes, buttonFileSize);
 
 	    return hbox;
 	}  
@@ -99,7 +111,6 @@ public class FileBrowser extends Application {
 	vdBackup.readFromFile("C:/FILEINFOS/pCloud/pCloud.csv");
 //	vdBackup.readFromFile("out/dev-test-auswahl.csv");
 	vdLocal= new VirtualDrive();
-//	vdLocal.readFromFile("C:/FILEINFOS/backupDrive/FULL.csv");
 //	vdLocal.readFromFile("C:/FILEINFOS/backupDrive/DEPTH4.csv");
 	vdLocal.readFromFile("C:\\FILEINFOS\\backupDrive\\files-G.-merged.csv");
 //	vdLocal.readFromFile("out/dev-test.csv");
@@ -155,6 +166,7 @@ public class FileBrowser extends Application {
           }
         }
       };
+      cell.setOnContextMenuRequested(ev -> showDetailedInfo(ev));
       return cell;
     });
 
@@ -216,13 +228,30 @@ public class FileBrowser extends Application {
     treeTableView.getColumns().add(lastModifiedColumn);
 
     treeTableView.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
-      String absPath = newValue.getValue().getName() + " (" + numberFormat.format(newValue.getValue().getSize())+")";
+      String absPath = newValue.getValue().getFullName() + " (" + numberFormat.format(newValue.getValue().getSize())+")";
       label.setText(newValue != null ? absPath : "");
     });
 
     treeTableView.getSelectionModel().selectFirst();
 
     return treeTableView;
+  }
+
+  private void showDetailedInfo(ContextMenuEvent ev) {
+	  @SuppressWarnings("unchecked")
+	  BaseInfo rightClickedFile = ((TreeTableCell<BaseInfo, FileTreeItem>)ev.getSource()).getItem().getValue();
+	  System.out.println("Righclick on : "+rightClickedFile.getFullName());
+	  ev.consume();
+	  if (!rightClickedFile.isFile()) {
+		  return;
+	  }
+	  List<FileInfo> remoteFiles = vdBackup.getFilesBySHA256(rightClickedFile.asFileInfo().sha256);
+	  if (remoteFiles == null) {
+		  return;
+	  }
+	  for (FileInfo remoteFile:remoteFiles) {
+		  System.out.println("  * "+remoteFile.getFullName());
+	  }
   }
 
   private void initGuiData() {
@@ -248,7 +277,7 @@ public class FileBrowser extends Application {
 	System.out.println("DUPSIZE: "+Utils.readableSize(dupSize));
   }
 
-  private final static Set<String> IMAGE_EXTENSIONS = new HashSet<>(Arrays.asList("avi", "bmp", "gif", "heic", "jpg", "jpeg", "mov", "mp4", "mpg", "mpeg", "png", "raw", "tga", "tif", "tiff"));
+  private final static Set<String> IMAGE_EXTENSIONS = new HashSet<>(Arrays.asList("avi", "bmp", "gif", "heic", "jpg", "jpeg", "mov", "mp4", "mpg", "mpeg", "png", "raw", "tga", "tif", "tiff", "vob", "wmv"));
   
   private void recalcGuiData() {
 	vdLocal.getRootFolder().forEachFile(file -> {
@@ -260,6 +289,9 @@ public class FileBrowser extends Application {
 		if (imagesOnly && !gd.filteredOut) {
 			String ext = Utils.getFileExtension(file.getName()).toLowerCase();
 			gd.filteredOut = !IMAGE_EXTENSIONS.contains(ext);
+		}
+		if (minFileSize>0 && !gd.filteredOut) {
+			gd.filteredOut = file.getSize() < minFileSize; 
 		}
 	});
 	recalcEffectiveSizes();

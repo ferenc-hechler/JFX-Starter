@@ -40,6 +40,7 @@ public class FileFolderInfoStore {
 	}
 
 	public void writeToFile(String storeFilename) {
+		System.out.println("writing to '"+storeFilename+"'");
 		try (PrintStream out = new PrintStream(storeFilename, StandardCharsets.UTF_8)) {
 			fileFolderInfos.forEach(ffi -> out.println(ffi.toCSV()));
 		} catch (IOException e) {

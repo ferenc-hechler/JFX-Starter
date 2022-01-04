@@ -31,7 +31,7 @@ public class VirtualDrive {
 	}
 
 	public void readFromFile(String filename) {
-		System.out.println(Utils.getMemoryInfo());
+		System.out.println("reading '"+filename+"', memory: "+Utils.getMemoryInfo());
 		FileFolderInfoStore store = new FileFolderInfoStore();
 		StopWatch watch = new StopWatch();
 		store.readFromFile(filename);
