@@ -4,9 +4,12 @@ import java.io.File;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import de.hechler.experiments.jfxstarter.persist.BaseInfo;
 import de.hechler.experiments.jfxstarter.persist.VirtualDrive;
@@ -18,8 +21,8 @@ import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.ToggleButton;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeTableCell;
 import javafx.scene.control.TreeTableColumn;
@@ -34,7 +37,7 @@ import javafx.util.Callback;
 /** from: https://yumberc.github.io/FileBrowser/FileBrowser.html */
 public class FileBrowser extends Application {
   
-  private VirtualDrive vdCloud;
+  private VirtualDrive vdLocal;
   private VirtualDrive vdBackup;
 
   SimpleDateFormat dateFormat = new SimpleDateFormat();
@@ -42,6 +45,9 @@ public class FileBrowser extends Application {
 
   Label label;
   TreeTableView<BaseInfo> treeTableView;
+  
+  private boolean filterDuplicates = false;
+  private boolean imagesOnly = false;
 
   @Override
   public void start(Stage stage) {
@@ -69,12 +75,20 @@ public class FileBrowser extends Application {
 	    hbox.setSpacing(10);
 	    hbox.setStyle("-fx-background-color: #336699;");
 
-	    Button buttonCurrent = new Button("Images Only");
-	    buttonCurrent.setPrefSize(100, 20);
+	    ToggleButton buttonImagesOnly = new ToggleButton("Images Only");
+	    buttonImagesOnly.setOnAction(ae -> {
+	    	imagesOnly = ((ToggleButton)ae.getSource()).isSelected();
+	    	recalcGuiData();
+	    });
+	    buttonImagesOnly.setPrefSize(100, 20);
 
-	    Button buttonProjected = new Button("Ignore Duplicates");
-	    buttonProjected.setPrefSize(130, 20);
-	    hbox.getChildren().addAll(buttonCurrent, buttonProjected);
+	    ToggleButton buttonHideDupes = new ToggleButton("Hide Duplicates");
+	    buttonHideDupes.setOnAction(ae -> {
+	    	filterDuplicates = ((ToggleButton)ae.getSource()).isSelected();
+	    	recalcGuiData();
+	    });
+	    buttonHideDupes.setPrefSize(130, 20);
+	    hbox.getChildren().addAll(buttonImagesOnly, buttonHideDupes);
 
 	    return hbox;
 	}  
@@ -84,16 +98,16 @@ public class FileBrowser extends Application {
 	vdBackup = new VirtualDrive();
 //	vdBackup.readFromFile("C:/FILEINFOS/pCloud/pCloud.csv");
 	vdBackup.readFromFile("out/dev-test-auswahl.csv");
-	vdCloud= new VirtualDrive();
-//	vdCloud.readFromFile("C:/FILEINFOS/backupDrive/FULL.csv");
-//	vdCloud.readFromFile("C:/FILEINFOS/backupDrive/DEPTH4.csv");
-//	vdCloud.readFromFile("C:\\FILEINFOS\\backupDrive\\merged.csv");
-	vdCloud.readFromFile("out/dev-test.csv");
-	long volSize = vdCloud.getRootFolder().calcFolderSizes();
+	vdLocal= new VirtualDrive();
+//	vdLocal.readFromFile("C:/FILEINFOS/backupDrive/FULL.csv");
+//	vdLocal.readFromFile("C:/FILEINFOS/backupDrive/DEPTH4.csv");
+//	vdLocal.readFromFile("C:\\FILEINFOS\\backupDrive\\merged.csv");
+	vdLocal.readFromFile("out/dev-test.csv");
+	long volSize = vdLocal.getRootFolder().calcFolderSizes();
 	System.out.println("VOLSIZE: "+Utils.readableSize(volSize));
 	initGuiData();
 	
-    FileTreeItem root = new FileTreeItem(vdCloud.getRootFolder());
+    FileTreeItem root = new FileTreeItem(vdLocal.getRootFolder());
  
     final TreeTableView<BaseInfo> treeTableView = new TreeTableView<>();
 
@@ -213,7 +227,7 @@ public class FileBrowser extends Application {
 
   private void initGuiData() {
 	final Set<String> sha256hashes = vdBackup.getSHA256Hashes();
-	vdCloud.getRootFolder().forEachFile(file -> {
+	vdLocal.getRootFolder().forEachFile(file -> {
 		if (sha256hashes.contains(file.sha256)) {
 			file.setData(new GuiData(file.size, 0));
 		}
@@ -221,7 +235,7 @@ public class FileBrowser extends Application {
 			file.setData(new GuiData(0, file.size));
 		}
 	});
-	long dupSize = vdCloud.getRootFolder().recursiveCollect((f, childResult) -> {
+	long dupSize = vdLocal.getRootFolder().recursiveCollect((f, childResult) -> {
 		if (f.isFile()) {
 			GuiData data = f.getData();
 			return data.duplicateSize;
@@ -234,7 +248,57 @@ public class FileBrowser extends Application {
 	System.out.println("DUPSIZE: "+Utils.readableSize(dupSize));
   }
 
-private Image getImageResource(String name) {
+  private final static Set<String> IMAGE_EXTENSIONS = new HashSet<>(Arrays.asList("bmp", "gif", "heic", "jpg", "jpeg", "png", "tga", "tif", "tiff"));
+  
+  private void recalcGuiData() {
+	vdLocal.getRootFolder().forEachFile(file -> {
+		GuiData gd = file.getData();
+		gd.filteredOut = false;
+		if (filterDuplicates) {
+			gd.filteredOut = gd.isDuplicate();
+		}
+		if (imagesOnly && !gd.filteredOut) {
+			String ext = Utils.getFileExtension(file.getName()).toLowerCase();
+			gd.filteredOut = !IMAGE_EXTENSIONS.contains(ext);
+		}
+	});
+	recalcEffectiveSizes();
+  }
+
+  private void recalcEffectiveSizes() {
+	vdLocal.getRootFolder().forEachFile(file -> {
+		GuiData gd = file.getData();
+		if (gd.isFilteredOut()) {
+			gd.effectiveSize = 0;
+			gd.duplicateSize = 0;
+		}
+		else if (gd.isDuplicate()) {
+			gd.effectiveSize = 0;
+			gd.duplicateSize = file.size;
+		} 
+		else {
+			gd.effectiveSize = file.size;
+			gd.duplicateSize = 0;
+		}
+	});
+	GuiData rootGD = vdLocal.getRootFolder().recursiveCollect((f, childData) -> {
+		GuiData gd = f.getData();
+		if (f.isFile()) {
+			return gd; 
+		}
+		gd.effectiveSize = 0;
+		gd.duplicateSize = 0;
+		childData.forEach(childGD -> {
+			gd.effectiveSize += childGD.effectiveSize;
+			gd.duplicateSize += childGD.duplicateSize;
+		});
+		gd.duplicate = (gd.duplicateSize>0) && (gd.effectiveSize==0);
+		gd.filteredOut = (gd.duplicateSize==0) && (gd.effectiveSize==0);
+		return gd;
+	});
+  }
+
+  private Image getImageResource(String name) {
     Image img = null;
     try { img = new Image(getClass().getResourceAsStream(name)); } catch (Exception e) {}
     return img;
@@ -294,6 +358,8 @@ private Image getImageResource(String name) {
       	files.addAll(getValue().asFolderInfo().getChildFiles());
     	files.addAll(getValue().asFolderInfo().getChildFolders());
 
+    	files = files.stream().filter(f -> !(((GuiData)f.getData()).isFilteredOut())).collect(Collectors.toList());
+    	
     	if (files != null && files.size() > 0) {
           getChildren().clear();
           for (BaseInfo childFile : files) {

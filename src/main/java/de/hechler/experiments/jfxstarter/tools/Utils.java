@@ -67,4 +67,15 @@ public class Utils {
 		}
     }
 	
+    public static String getFileExtension(String filename) {
+    	int dotPos = filename.lastIndexOf(".");
+    	if (dotPos == -1) {
+    		return "";
+    	}
+    	String result = filename.substring(dotPos+1);
+    	if ((result.indexOf('/') != -1) || (result.indexOf('\\') != -1)) {
+    		return "";
+    	}
+    	return result;
+    }
 }
