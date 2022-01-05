@@ -84,6 +84,10 @@ public class VirtualDrive {
 		foldersByID.put(folder.id, folder);
 	}
 
+	public void setRootFolder(FolderInfo rootFolder) {
+		this.rootFolder = rootFolder;
+	}
+
 	public void addFile(FileInfo file) {
 		filesByID.put(file.id, file);
 		if (file.sha256 != null) {
@@ -131,6 +135,10 @@ public class VirtualDrive {
 			result.add(FileFolderInfoDAO.createFileInfo(fileID, file.parentFolder.id, file.name, file.created, file.lastModified, file.size, file.hash, file.sha256));
 		}
 		return result;
+	}
+
+	public int getCountFiles() {
+		return filesByID.size();
 	}
 
 }

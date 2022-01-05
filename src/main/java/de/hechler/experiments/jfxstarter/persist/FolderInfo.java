@@ -28,9 +28,20 @@ public class FolderInfo extends BaseInfo {
 		file.parentFolder = this;
 	}
 	
+	public void removeFile(FileInfo file) {
+		childFiles.remove(file);
+		file.parentFolder = null;
+	}
+
+	
 	public void addFolder(FolderInfo folder) {
 		childFolders.add(folder);
 		folder.parentFolder = this;
+	}
+	
+	public void removeFolder(FolderInfo folder) {
+		childFolders.remove(folder);
+		folder.parentFolder = null;
 	}
 	
 	public Long getParentFolderID() {
