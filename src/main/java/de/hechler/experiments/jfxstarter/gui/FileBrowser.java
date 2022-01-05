@@ -21,8 +21,10 @@ import javafx.event.Event;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
+import javafx.scene.control.TextArea;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeTableCell;
@@ -33,6 +35,7 @@ import javafx.scene.image.ImageView;
 import javafx.scene.input.ContextMenuEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.util.Callback;
 
@@ -45,7 +48,8 @@ public class FileBrowser extends Application {
   SimpleDateFormat dateFormat = new SimpleDateFormat();
   NumberFormat numberFormat = NumberFormat.getIntegerInstance();
 
-  Label label;
+  Label lbSelectedFileInfo;
+  TextArea taDetailedInfo; 
   TreeTableView<BaseInfo> treeTableView;
   
   private boolean filterDuplicates = false;
@@ -55,14 +59,14 @@ public class FileBrowser extends Application {
   @Override
   public void start(Stage stage) {
 
-    label = new Label();
+    Node top = addTopButtons();
+    Node bottom = addBottomInfos();
     treeTableView = createFileBrowserTreeTableView();
-    HBox hbox = addHBox();
     
     BorderPane layout = new BorderPane();
-	layout.setTop(hbox);
+	layout.setTop(top);
     layout.setCenter(treeTableView);
-    layout.setBottom(label);
+    layout.setBottom(bottom);
 
     stage.setScene(new Scene(layout, 600, 400));
     stage.show();
@@ -72,11 +76,11 @@ public class FileBrowser extends Application {
    * from: https://docs.oracle.com/javafx/2/layout/builtin_layouts.htm
    * @return top level elements.
    */
-  private HBox addHBox() {
-	    HBox hbox = new HBox();
-	    hbox.setPadding(new Insets(15, 12, 15, 12));
-	    hbox.setSpacing(10);
-	    hbox.setStyle("-fx-background-color: #336699;");
+  private Node addTopButtons() {
+	    HBox result = new HBox();
+	    result.setPadding(new Insets(15, 12, 15, 12));
+	    result.setSpacing(10);
+	    result.setStyle("-fx-background-color: #336699;");
 
 	    ToggleButton buttonImagesOnly = new ToggleButton("Images Only");
 	    buttonImagesOnly.setOnAction(ae -> {
@@ -100,19 +104,33 @@ public class FileBrowser extends Application {
 	    buttonFileSize.setPrefSize(100, 20);
 
 	    
-	    hbox.getChildren().addAll(buttonImagesOnly, buttonHideDupes, buttonFileSize);
+	    result.getChildren().addAll(buttonImagesOnly, buttonHideDupes, buttonFileSize);
 
-	    return hbox;
+	    return result;
 	}  
   
+    private Node addBottomInfos() {
+	    VBox result = new VBox();
+	    result.setPadding(new Insets(2, 2, 2, 2));
+	    result.setSpacing(10);
+	    result.setStyle("-fx-background-color: #EEEEEE;");
+	    lbSelectedFileInfo = new Label();
+	    taDetailedInfo = new TextArea();
+	    taDetailedInfo.setPrefRowCount(3);
+	    taDetailedInfo.setEditable(false);
+	    result.getChildren().addAll(lbSelectedFileInfo, taDetailedInfo);
+		return result;
+	}
+
+
   private TreeTableView<BaseInfo> createFileBrowserTreeTableView() {
 
 	vdBackup = new VirtualDrive();
 	vdBackup.readFromFile("C:/FILEINFOS/pCloud/pCloud.csv");
 //	vdBackup.readFromFile("out/dev-test-auswahl.csv");
 	vdLocal= new VirtualDrive();
-//	vdLocal.readFromFile("C:/FILEINFOS/backupDrive/DEPTH4.csv");
-	vdLocal.readFromFile("C:\\FILEINFOS\\backupDrive\\files-G.-merged.csv");
+	vdLocal.readFromFile("C:/FILEINFOS/backupDrive/DEPTH4.csv");
+//	vdLocal.readFromFile("C:\\FILEINFOS\\backupDrive\\files-G.-merged.csv");
 //	vdLocal.readFromFile("out/dev-test.csv");
 	long volSize = vdLocal.getRootFolder().calcFolderSizes();
 	System.out.println("VOLSIZE: "+Utils.readableSize(volSize));
@@ -228,8 +246,7 @@ public class FileBrowser extends Application {
     treeTableView.getColumns().add(lastModifiedColumn);
 
     treeTableView.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
-      String absPath = newValue.getValue().getFullName() + " (" + numberFormat.format(newValue.getValue().getSize())+")";
-      label.setText(newValue != null ? absPath : "");
+		updateSelectFileInfo((newValue == null) ? null : newValue.getValue());
     });
 
     treeTableView.getSelectionModel().selectFirst();
@@ -237,10 +254,32 @@ public class FileBrowser extends Application {
     return treeTableView;
   }
 
-  private void showDetailedInfo(ContextMenuEvent ev) {
-	  @SuppressWarnings("unchecked")
+  private void updateSelectFileInfo(BaseInfo f) {
+	  if (f == null) {
+		  lbSelectedFileInfo.setText("");
+		  taDetailedInfo.setText("");
+		  return;
+	  }
+      lbSelectedFileInfo.setText(f.getFullName() + " (" + numberFormat.format(f.getSize())+")");
+	  StringBuffer detailedText = new StringBuffer();
+	  int cnt = 0;
+      if (f.isFile()) {
+    	  List<FileInfo> remoteFiles = vdBackup.getFilesBySHA256(f.asFileInfo().sha256);
+    	  if (remoteFiles != null) {
+	    	  for (FileInfo remoteFile:remoteFiles) {
+	    		  cnt++;
+	    		  detailedText.append(remoteFile.getFullName()).append("\n");
+	    	  }
+    	  }
+      }
+	  taDetailedInfo.setText(detailedText.toString().trim());
+//	  taDetailedInfo.setPrefRowCount(Math.min(10, Math.max(2, cnt)));
+  }
+
+private void showDetailedInfo(ContextMenuEvent ev) {
+	  //@SuppressWarnings("unchecked")
 	  BaseInfo rightClickedFile = ((TreeTableCell<BaseInfo, FileTreeItem>)ev.getSource()).getItem().getValue();
-	  System.out.println("Righclick on : "+rightClickedFile.getFullName());
+	  //System.out.println("Righclick on : "+rightClickedFile.getFullName());
 	  ev.consume();
 	  if (!rightClickedFile.isFile()) {
 		  return;
@@ -249,9 +288,16 @@ public class FileBrowser extends Application {
 	  if (remoteFiles == null) {
 		  return;
 	  }
+	  StringBuilder info = new StringBuilder();
+	  int cnt = 0;
 	  for (FileInfo remoteFile:remoteFiles) {
-		  System.out.println("  * "+remoteFile.getFullName());
+		  if (cnt++ > 0) {
+			  info.append("\n");
+		  }
+		  info.append(remoteFile.getFullName());
 	  }
+	  taDetailedInfo.setText(info.toString());
+	  taDetailedInfo.setPrefRowCount(Math.min(10, Math.max(2, cnt)));
   }
 
   private void initGuiData() {
@@ -313,7 +359,7 @@ public class FileBrowser extends Application {
 			gd.duplicateSize = 0;
 		}
 	});
-	@SuppressWarnings("unused")
+	//@SuppressWarnings("unchecked")
 	GuiData rootGD = vdLocal.getRootFolder().recursiveCollect((f, childData) -> {
 		GuiData gd = f.getData();
 		if (f.isFile()) {
