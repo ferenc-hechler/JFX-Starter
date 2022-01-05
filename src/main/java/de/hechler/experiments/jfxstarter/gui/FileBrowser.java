@@ -20,10 +20,11 @@ import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.event.Event;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
+import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Scene;
-import javafx.scene.control.Label;
+import javafx.scene.control.SplitPane;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.control.TreeItem;
@@ -35,7 +36,6 @@ import javafx.scene.image.ImageView;
 import javafx.scene.input.ContextMenuEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.util.Callback;
 
@@ -48,7 +48,6 @@ public class FileBrowser extends Application {
   SimpleDateFormat dateFormat = new SimpleDateFormat();
   NumberFormat numberFormat = NumberFormat.getIntegerInstance();
 
-  Label lbSelectedFileInfo;
   TextArea taDetailedInfo; 
   TreeTableView<BaseInfo> treeTableView;
   
@@ -60,13 +59,13 @@ public class FileBrowser extends Application {
   public void start(Stage stage) {
 
     Node top = addTopButtons();
-    Node bottom = addBottomInfos();
     treeTableView = createFileBrowserTreeTableView();
+    Node ttvWithDetails = addBottomDetails(treeTableView);
     
     BorderPane layout = new BorderPane();
 	layout.setTop(top);
-    layout.setCenter(treeTableView);
-    layout.setBottom(bottom);
+    layout.setCenter(ttvWithDetails);
+//    layout.setCenter(treeTableView);
 
     stage.setScene(new Scene(layout, 600, 400));
     stage.show();
@@ -109,17 +108,14 @@ public class FileBrowser extends Application {
 	    return result;
 	}  
   
-    private Node addBottomInfos() {
-	    VBox result = new VBox();
-	    result.setPadding(new Insets(2, 2, 2, 2));
-	    result.setSpacing(10);
-	    result.setStyle("-fx-background-color: #EEEEEE;");
-	    lbSelectedFileInfo = new Label();
+    private Node addBottomDetails(Node upperNode) {
+	    SplitPane result = new SplitPane();
+	    result.setOrientation(Orientation.VERTICAL);
 	    taDetailedInfo = new TextArea();
-	    taDetailedInfo.setPrefRowCount(3);
+	    taDetailedInfo.setStyle("-fx-control-inner-background: #EEEEEE;");
 	    taDetailedInfo.setEditable(false);
-	    result.getChildren().addAll(lbSelectedFileInfo, taDetailedInfo);
-		return result;
+	    result.getItems().addAll(upperNode, taDetailedInfo);
+	    return result;
 	}
 
 
@@ -255,28 +251,28 @@ public class FileBrowser extends Application {
   }
 
   private void updateSelectFileInfo(BaseInfo f) {
+	  if (taDetailedInfo == null) {
+		  return;
+	  }
 	  if (f == null) {
-		  lbSelectedFileInfo.setText("");
 		  taDetailedInfo.setText("");
 		  return;
 	  }
-      lbSelectedFileInfo.setText(f.getFullName() + " (" + numberFormat.format(f.getSize())+")");
 	  StringBuffer detailedText = new StringBuffer();
-	  int cnt = 0;
+	  detailedText.append(f.getFullName()).append(" (").append(numberFormat.format(f.getSize())).append(")");
       if (f.isFile()) {
     	  List<FileInfo> remoteFiles = vdBackup.getFilesBySHA256(f.asFileInfo().sha256);
     	  if (remoteFiles != null) {
 	    	  for (FileInfo remoteFile:remoteFiles) {
-	    		  cnt++;
-	    		  detailedText.append(remoteFile.getFullName()).append("\n");
+	    		  detailedText.append("\n").append(remoteFile.getFullName());
 	    	  }
     	  }
       }
-	  taDetailedInfo.setText(detailedText.toString().trim());
-//	  taDetailedInfo.setPrefRowCount(Math.min(10, Math.max(2, cnt)));
+	  taDetailedInfo.setText(detailedText.toString());
   }
 
-private void showDetailedInfo(ContextMenuEvent ev) {
+  
+  private void showDetailedInfo(ContextMenuEvent ev) {
 	  //@SuppressWarnings("unchecked")
 	  BaseInfo rightClickedFile = ((TreeTableCell<BaseInfo, FileTreeItem>)ev.getSource()).getItem().getValue();
 	  //System.out.println("Righclick on : "+rightClickedFile.getFullName());
