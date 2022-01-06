@@ -325,7 +325,7 @@ private void updateSelectFileInfo(BaseInfo f) {
 	    	  }
     	  }
     	  List<FileInfo> localFiles = vdLocal.getFilesBySHA256(f.asFileInfo().sha256);
-    	  if (remoteFiles != null) {
+    	  if (localFiles != null) {
 	    	  for (FileInfo localFile:localFiles) {
 	    		  if (localFile == f) {
 	    			  continue;
@@ -338,38 +338,39 @@ private void updateSelectFileInfo(BaseInfo f) {
   }
 
   
-  private void showDetailedInfo(ContextMenuEvent ev) {
-	  //@SuppressWarnings("unchecked")
-	  BaseInfo rightClickedFile = ((TreeTableCell<BaseInfo, FileTreeItem>)ev.getSource()).getItem().getValue();
-	  //System.out.println("Righclick on : "+rightClickedFile.getFullName());
-	  ev.consume();
-	  if (!rightClickedFile.isFile()) {
-		  return;
-	  }
-	  List<FileInfo> remoteFiles = vdBackup.getFilesBySHA256(rightClickedFile.asFileInfo().sha256);
-	  if (remoteFiles == null) {
-		  return;
-	  }
-	  StringBuilder info = new StringBuilder();
-	  int cnt = 0;
-	  for (FileInfo remoteFile:remoteFiles) {
-		  if (cnt++ > 0) {
-			  info.append("\n");
-		  }
-		  info.append(remoteFile.getFullName());
-	  }
-	  taDetailedInfo.setText(info.toString());
-	  taDetailedInfo.setPrefRowCount(Math.min(10, Math.max(2, cnt)));
-  }
-
   private void initGuiData() {
-    filterDuplicates = false;
-	imagesOnly = false;
-	minFileSize = 0;
-	recalcGuiData();
-	GuiData gdRoot = vdLocal.getRootFolder().getData(); 	
+	vdLocal.getRootFolder().forEachFile(file -> {
+		createGuiData(file);
+	});
+	GuiData gdRoot = vdLocal.getRootFolder().recursiveCollect((f, childResult) -> {
+		if (f.isFile()) {
+			return f.getData();
+		}
+		final GuiData result = new GuiData(0L, f.size, 0L);
+		childResult.forEach(gd -> {
+			result.duplicateSize += gd.duplicateSize;
+			result.ownDuplicateSize += gd.ownDuplicateSize;
+		});
+		result.effectiveSize = f.size - result.duplicateSize;
+		f.setData(result);
+		return result;
+	});
 	System.out.println("DUPSIZE: "+Utils.readableSize(gdRoot.duplicateSize)+" / REMAINING OWN: "+Utils.readableSize(gdRoot.ownDuplicateSize));
   }
+
+	private void createGuiData(FileInfo file) {
+		if (sha256hashes.contains(file.sha256)) {
+			file.setData(new GuiData(file.size, 0L, 0L));
+		}
+		else {
+			long ownDupe = 0L;
+			if (localDuplicateHashes.contains(file.sha256)) {
+				long dups = vdLocal.getFilesBySHA256(file.sha256).size();
+				ownDupe = file.size * (dups-1)/dups; 
+			}
+			file.setData(new GuiData(0, file.size, ownDupe));
+		}
+	}
 
 
   private final static Set<String> IMAGE_EXTENSIONS = new HashSet<>(Arrays.asList("avi", "bmp", "gif", "heic", "jpg", "jpeg", "mov", "m4v", "mp4", "mpg", "mpeg", "png", "raw", "tga", "tif", "tiff", "vob", "wmv"));
