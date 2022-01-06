@@ -117,6 +117,10 @@ public class VirtualDrive {
 		return hashes.keySet();
 	}
 
+	public Map<String, List<FileInfo>> getSHA256Map() {
+		return hashes;
+	}
+
 	public long findMaxID() {
 		final long[] result = {-1L};
 		foldersByID.keySet().forEach(id -> result[0] = Math.max(result[0], id));

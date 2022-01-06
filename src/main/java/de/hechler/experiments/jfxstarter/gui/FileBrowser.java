@@ -47,6 +47,9 @@ public class FileBrowser extends Application {
   
   private VirtualDrive vdLocal;
   private VirtualDrive vdBackup;
+  
+  private Set<String> localDuplicateHashes;
+  private Set<String> sha256hashes;
 
   SimpleDateFormat dateFormat = new SimpleDateFormat();
   NumberFormat numberFormat = NumberFormat.getIntegerInstance();
@@ -133,10 +136,17 @@ public class FileBrowser extends Application {
 	vdBackup = new VirtualDrive();
 	vdBackup.readFromFile("C:/FILEINFOS/pCloud/pCloud.csv");
 //	vdBackup.readFromFile("out/dev-test-auswahl.csv");
+	sha256hashes = vdBackup.getSHA256Hashes();
 	vdLocal= new VirtualDrive();
-	vdLocal.readFromFile("C:/FILEINFOS/backupDrive/DEPTH4.csv");
-//	vdLocal.readFromFile("C:\\FILEINFOS\\backupDrive\\files-G.-merged.csv");
+//	vdLocal.readFromFile("C:/FILEINFOS/backupDrive/DEPTH4.csv");
+	vdLocal.readFromFile("C:\\FILEINFOS\\backupDrive\\files-G.-merged.csv");
 //	vdLocal.readFromFile("out/dev-test.csv");
+	localDuplicateHashes = new HashSet<>();
+	vdLocal.getSHA256Map().forEach((k,v) -> {
+		if (v.size()>1) {
+			localDuplicateHashes.add(k);
+		}
+	});
 	long volSize = vdLocal.getRootFolder().calcFolderSizes();
 	System.out.println("VOLSIZE: "+Utils.readableSize(volSize));
 	initGuiData();
@@ -189,7 +199,13 @@ public class FileBrowser extends Application {
             BaseInfo f = item.getValue();
             String text = f.getParentFolder() == null ? File.separator : f.getName();
             setText(text);
-            String style = item.isDuplicate() && f.getParentFolder() != null ? "red" /* "-fx-accent" */ : "-fx-text-base-color" ;
+            String style = "-fx-text-base-color";
+            if (item.isDuplicate()) {
+            	style = "red";
+            }
+            else if (item.ownDuplicateSize>0) {
+            	style = "orange";
+            }
             setStyle("-fx-text-fill: " + style);
             if (item.isLeaf()) {
               setGraphic(imageView1);
@@ -249,6 +265,24 @@ public class FileBrowser extends Application {
     duplicateColumn.setSortable(false);
     treeTableView.getColumns().add(duplicateColumn);
 
+    TreeTableColumn<BaseInfo, String> ownDuplicateColumn = new TreeTableColumn<>("OwnDuplicate");
+    ownDuplicateColumn.setCellValueFactory(cellData -> {
+      FileTreeItem item = ((FileTreeItem)cellData.getValue());
+//      String s = item.isLeaf() ? numberFormat.format(item.length()) : "";
+      String s = numberFormat.format(item.ownDuplicateSize());
+      return new ReadOnlyObjectWrapper<String>(s);
+    });
+    Callback<TreeTableColumn<BaseInfo, String>,TreeTableCell<BaseInfo, String>> ownDuplicateCellFactory = ownDuplicateColumn.getCellFactory();
+    ownDuplicateColumn.setCellFactory(column -> {
+      TreeTableCell<BaseInfo, String> cell = ownDuplicateCellFactory.call(column);
+      cell.setAlignment(Pos.CENTER_RIGHT);
+      cell.setPadding(new Insets(0, 8, 0, 0));
+      return cell;
+    });
+    ownDuplicateColumn.setPrefWidth(100);
+    ownDuplicateColumn.setSortable(false);
+    treeTableView.getColumns().add(ownDuplicateColumn);
+
     TreeTableColumn<BaseInfo, String> lastModifiedColumn = new TreeTableColumn<>("Last Modified");
     lastModifiedColumn.setCellValueFactory(cellData -> {
       FileTreeItem item = (FileTreeItem)cellData.getValue();
@@ -287,7 +321,16 @@ private void updateSelectFileInfo(BaseInfo f) {
     	  List<FileInfo> remoteFiles = vdBackup.getFilesBySHA256(f.asFileInfo().sha256);
     	  if (remoteFiles != null) {
 	    	  for (FileInfo remoteFile:remoteFiles) {
-	    		  detailedText.append("\n").append(remoteFile.getFullName());
+	    		  detailedText.append("\n[R] ").append(remoteFile.getFullName());
+	    	  }
+    	  }
+    	  List<FileInfo> localFiles = vdLocal.getFilesBySHA256(f.asFileInfo().sha256);
+    	  if (remoteFiles != null) {
+	    	  for (FileInfo localFile:localFiles) {
+	    		  if (localFile == f) {
+	    			  continue;
+	    		  }
+	    		  detailedText.append("\n[L] ").append(localFile.getFullName());
 	    	  }
     	  }
       }
@@ -320,27 +363,14 @@ private void updateSelectFileInfo(BaseInfo f) {
   }
 
   private void initGuiData() {
-	final Set<String> sha256hashes = vdBackup.getSHA256Hashes();
-	vdLocal.getRootFolder().forEachFile(file -> {
-		if (sha256hashes.contains(file.sha256)) {
-			file.setData(new GuiData(file.size, 0));
-		}
-		else {
-			file.setData(new GuiData(0, file.size));
-		}
-	});
-	long dupSize = vdLocal.getRootFolder().recursiveCollect((f, childResult) -> {
-		if (f.isFile()) {
-			GuiData data = f.getData();
-			return data.duplicateSize;
-		}
-		Long[] sum = {0L};
-		childResult.forEach(n -> sum[0] += n);
-		f.setData(new GuiData(sum[0], f.size-sum[0]));
-		return sum[0];
-	});
-	System.out.println("DUPSIZE: "+Utils.readableSize(dupSize));
+    filterDuplicates = false;
+	imagesOnly = false;
+	minFileSize = 0;
+	recalcGuiData();
+	GuiData gdRoot = vdLocal.getRootFolder().getData(); 	
+	System.out.println("DUPSIZE: "+Utils.readableSize(gdRoot.duplicateSize)+" / REMAINING OWN: "+Utils.readableSize(gdRoot.ownDuplicateSize));
   }
+
 
   private final static Set<String> IMAGE_EXTENSIONS = new HashSet<>(Arrays.asList("avi", "bmp", "gif", "heic", "jpg", "jpeg", "mov", "m4v", "mp4", "mpg", "mpeg", "png", "raw", "tga", "tif", "tiff", "vob", "wmv"));
   
@@ -368,14 +398,21 @@ private void updateSelectFileInfo(BaseInfo f) {
 		if (gd.isFilteredOut()) {
 			gd.effectiveSize = 0;
 			gd.duplicateSize = 0;
+			gd.ownDuplicateSize = 0;
 		}
 		else if (gd.isDuplicate()) {
 			gd.effectiveSize = 0;
 			gd.duplicateSize = file.size;
+			gd.ownDuplicateSize = 0;
 		} 
 		else {
 			gd.effectiveSize = file.size;
 			gd.duplicateSize = 0;
+			gd.ownDuplicateSize = 0;
+			if (localDuplicateHashes.contains(file.sha256)) {
+				long dups = vdLocal.getFilesBySHA256(file.sha256).size();
+				gd.ownDuplicateSize = file.size * (dups-1)/dups; 
+			}
 		}
 	});
 	//@SuppressWarnings("unchecked")
@@ -386,9 +423,11 @@ private void updateSelectFileInfo(BaseInfo f) {
 		}
 		gd.effectiveSize = 0;
 		gd.duplicateSize = 0;
+		gd.ownDuplicateSize = 0;
 		childData.forEach(childGD -> {
 			gd.effectiveSize += childGD.effectiveSize;
 			gd.duplicateSize += childGD.duplicateSize;
+			gd.ownDuplicateSize += childGD.ownDuplicateSize;
 		});
 		gd.duplicate = (gd.duplicateSize>0) && (gd.effectiveSize==0);
 		gd.filteredOut = (gd.duplicateSize==0) && (gd.effectiveSize==0);
@@ -408,6 +447,7 @@ private void updateSelectFileInfo(BaseInfo f) {
     private boolean duplicate;
     private long length;
     private long duplicateSize;
+    private long ownDuplicateSize;
     private long lastModified;
 
     FileTreeItem(BaseInfo fileOrfolder) {
@@ -421,6 +461,7 @@ private void updateSelectFileInfo(BaseInfo f) {
       duplicate = guiData.isDuplicate();
       length = guiData.getEffectiveSize();
       duplicateSize = guiData.getDuplicateSize();
+      ownDuplicateSize = guiData.getOwnDuplicateSize();
       lastModified = getValue().getLastModified();
     }
 
@@ -446,6 +487,7 @@ private void updateSelectFileInfo(BaseInfo f) {
     public long lastModified() { return lastModified; }
     public long length() { return length; }
     public long duplicateSize() { return duplicateSize; }
+    public long ownDuplicateSize() { return ownDuplicateSize; }
     public boolean isDuplicate() { return duplicate; }
 
     private void createChildren() {
