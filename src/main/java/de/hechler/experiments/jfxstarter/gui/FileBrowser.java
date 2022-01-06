@@ -17,6 +17,7 @@ import de.hechler.experiments.jfxstarter.persist.VirtualDrive;
 import de.hechler.experiments.jfxstarter.tools.Utils;
 import javafx.application.Application;
 import javafx.beans.property.ReadOnlyObjectWrapper;
+import javafx.event.ActionEvent;
 import javafx.event.Event;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
@@ -24,6 +25,8 @@ import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Scene;
+import javafx.scene.control.ContextMenu;
+import javafx.scene.control.MenuItem;
 import javafx.scene.control.SplitPane;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.ToggleButton;
@@ -51,14 +54,18 @@ public class FileBrowser extends Application {
   TextArea taDetailedInfo; 
   TreeTableView<BaseInfo> treeTableView;
   
+  ContextMenu contextMenu;
+  
   private boolean filterDuplicates = false;
   private boolean imagesOnly = false;
   private long minFileSize = 0;
+  
 
   @Override
   public void start(Stage stage) {
 
-    Node top = addTopButtons();
+
+	Node top = addTopButtons();
     treeTableView = createFileBrowserTreeTableView();
     Node ttvWithDetails = addBottomDetails(treeTableView);
     
@@ -110,7 +117,9 @@ public class FileBrowser extends Application {
   
     private Node addBottomDetails(Node upperNode) {
 	    SplitPane result = new SplitPane();
+	    result.setDividerPosition(0, 0.9);
 	    result.setOrientation(Orientation.VERTICAL);
+	    result.setStyle("-fx-background-color: #000000;");
 	    taDetailedInfo = new TextArea();
 	    taDetailedInfo.setStyle("-fx-control-inner-background: #EEEEEE;");
 	    taDetailedInfo.setEditable(false);
@@ -151,6 +160,16 @@ public class FileBrowser extends Application {
     Image image2 = getImageResource("img/folder-open-16x16.png");
     Image image3 = getImageResource("img/folder-close-16x16.png");
 
+    ContextMenu contextMenu = new ContextMenu();
+    MenuItem menuItem1 = new MenuItem("Copy Filenames");
+    MenuItem menuItem2 = new MenuItem("Copy non duplicate Filenames");
+    menuItem1.setOnAction((event) -> {
+        copyFilenames(event, false);
+    });
+    menuItem2.setOnAction((event) -> {
+        copyFilenames(event, true);
+    });
+    contextMenu.getItems().addAll(menuItem1,menuItem2);
     nameColumn.setCellFactory(column -> {
       TreeTableCell<BaseInfo, FileTreeItem> cell = new TreeTableCell<BaseInfo, FileTreeItem>() {
 
@@ -180,7 +199,7 @@ public class FileBrowser extends Application {
           }
         }
       };
-      cell.setOnContextMenuRequested(ev -> showDetailedInfo(ev));
+      cell.setContextMenu(contextMenu);
       return cell;
     });
 
@@ -250,7 +269,11 @@ public class FileBrowser extends Application {
     return treeTableView;
   }
 
-  private void updateSelectFileInfo(BaseInfo f) {
+  private void copyFilenames(ActionEvent event, boolean skipDuplicates) {
+	  System.out.println(event.getClass());
+  }
+
+private void updateSelectFileInfo(BaseInfo f) {
 	  if (taDetailedInfo == null) {
 		  return;
 	  }
@@ -319,7 +342,7 @@ public class FileBrowser extends Application {
 	System.out.println("DUPSIZE: "+Utils.readableSize(dupSize));
   }
 
-  private final static Set<String> IMAGE_EXTENSIONS = new HashSet<>(Arrays.asList("avi", "bmp", "gif", "heic", "jpg", "jpeg", "mov", "mp4", "mpg", "mpeg", "png", "raw", "tga", "tif", "tiff", "vob", "wmv"));
+  private final static Set<String> IMAGE_EXTENSIONS = new HashSet<>(Arrays.asList("avi", "bmp", "gif", "heic", "jpg", "jpeg", "mov", "m4v", "mp4", "mpg", "mpeg", "png", "raw", "tga", "tif", "tiff", "vob", "wmv"));
   
   private void recalcGuiData() {
 	vdLocal.getRootFolder().forEachFile(file -> {
