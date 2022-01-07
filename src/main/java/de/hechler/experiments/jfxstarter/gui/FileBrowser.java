@@ -171,15 +171,23 @@ public class FileBrowser extends Application {
     Image image3 = getImageResource("img/folder-close-16x16.png");
 
     ContextMenu contextMenu = new ContextMenu();
-    MenuItem menuItem1 = new MenuItem("Copy Filenames");
-    MenuItem menuItem2 = new MenuItem("Copy non duplicate Filenames");
+    MenuItem menuItem1 = new MenuItem("Copy Files");
     menuItem1.setOnAction((event) -> {
-        copyFilenames(event, false);
+        copyFiles(event, false);
     });
+    MenuItem menuItem2 = new MenuItem("Copy non duplicate Files");
     menuItem2.setOnAction((event) -> {
-        copyFilenames(event, true);
+        copyFiles(event, true);
     });
-    contextMenu.getItems().addAll(menuItem1,menuItem2);
+    MenuItem menuItem3 = new MenuItem("Copy Folders");
+    menuItem3.setOnAction((event) -> {
+        copyFolders(event, false);
+    });
+    MenuItem menuItem4 = new MenuItem("Copy non duplicate Folders");
+    menuItem4.setOnAction((event) -> {
+        copyFolders(event, true);
+    });
+    contextMenu.getItems().addAll(menuItem1,menuItem2,menuItem3,menuItem4);
     nameColumn.setCellFactory(column -> {
       TreeTableCell<BaseInfo, FileTreeItem> cell = new TreeTableCell<BaseInfo, FileTreeItem>() {
 
@@ -303,7 +311,7 @@ public class FileBrowser extends Application {
     return treeTableView;
   }
 
-  private void copyFilenames(ActionEvent event, final boolean skipDuplicates) {
+  private void copyFiles(ActionEvent event, final boolean skipDuplicates) {
 	  TreeItem<BaseInfo> selectedItem = treeTableView.getSelectionModel().getSelectedItem();
 	  if (selectedItem != null) {
 		  BaseInfo f = selectedItem.getValue();
@@ -312,7 +320,7 @@ public class FileBrowser extends Application {
 			  FolderInfo folder = f.asFolderInfo();
 			  result.append("SET DESTDIT=%DESTDIR%\r\n");
 			  result.append("SET SRCDIR=").append(folder.getFullName()).append("\r\n");
-			  f.asFolderInfo().forEachFile(file -> {
+			  f.asFolderInfo().forEachDirectFile(file -> {
 				  GuiData gd = file.getData();
 				  boolean skipThis = gd.isFilteredOut();
 				  if ((!skipThis) && skipDuplicates) {
@@ -329,6 +337,33 @@ public class FileBrowser extends Application {
 	  }
   }
 
+  private void copyFolders(ActionEvent event, final boolean skipDuplicates) {
+	  TreeItem<BaseInfo> selectedItem = treeTableView.getSelectionModel().getSelectedItem();
+	  if (selectedItem != null) {
+		  BaseInfo f = selectedItem.getValue();
+		  if ((f != null) && f.isFolder()) {
+			  final StringBuffer result = new StringBuffer();
+			  FolderInfo folder = f.asFolderInfo();
+			  result.append("SET DESTDIT=%DESTDIR%\r\n");
+			  result.append("SET SRCDIR=").append(folder.getFullName()).append("\r\n");
+			  f.asFolderInfo().forEachDirectFolder(folder2copy -> {
+				  GuiData gd = folder2copy.getData();
+				  boolean skipThis = gd.isFilteredOut();
+				  if ((!skipThis) && skipDuplicates) {
+					  skipThis  = gd.isDuplicate();
+				  }
+				  if (!skipThis) {
+					  result.append("xcopy /S/Q %SRCDIR%\\").append(folder2copy.getName()).append(" %DESTDIR%\\").append(folder2copy.getName()).append("\r\n");
+				  }
+			  });
+			  String cmds = result.toString();
+			  Utils.copy2clipboard(cmds);
+			  taDetailedInfo.setText(cmds);
+		  }
+	  }
+  }
+
+  
   
   
 private void updateSelectFileInfo(BaseInfo f) {

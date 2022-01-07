@@ -94,6 +94,18 @@ public class FolderInfo extends BaseInfo {
 		visitor.accept(this);
 	}
 	
+	public void forEachDirectFile(Consumer<FileInfo> visitor) {
+		for (FileInfo child:childFiles) {
+			visitor.accept(child);
+		}
+	}
+	
+	public void forEachDirectFolder(Consumer<FolderInfo> visitor) {
+		for (FolderInfo child:childFolders) {
+			visitor.accept(child);
+		}
+	}
+	
 	public long calcFolderSizes() {
 		Long result = recursiveCollect((f, childResult) -> {
 			if (f.isFile()) {
