@@ -1,5 +1,7 @@
 package de.hechler.experiments.jfxstarter.tools;
 
+import java.awt.Toolkit;
+import java.awt.datatransfer.StringSelection;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -78,4 +80,9 @@ public class Utils {
     	}
     	return result;
     }
+
+    public static void copy2clipboard(String text) {
+    	Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(text), null);    
+    }
+
 }

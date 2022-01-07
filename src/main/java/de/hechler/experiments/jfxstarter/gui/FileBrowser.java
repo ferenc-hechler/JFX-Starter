@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
 
 import de.hechler.experiments.jfxstarter.persist.BaseInfo;
 import de.hechler.experiments.jfxstarter.persist.FileInfo;
+import de.hechler.experiments.jfxstarter.persist.FolderInfo;
 import de.hechler.experiments.jfxstarter.persist.VirtualDrive;
 import de.hechler.experiments.jfxstarter.tools.Utils;
 import javafx.application.Application;
@@ -36,7 +37,6 @@ import javafx.scene.control.TreeTableColumn;
 import javafx.scene.control.TreeTableView;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.scene.input.ContextMenuEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
@@ -303,10 +303,34 @@ public class FileBrowser extends Application {
     return treeTableView;
   }
 
-  private void copyFilenames(ActionEvent event, boolean skipDuplicates) {
-	  System.out.println(event.getClass());
+  private void copyFilenames(ActionEvent event, final boolean skipDuplicates) {
+	  TreeItem<BaseInfo> selectedItem = treeTableView.getSelectionModel().getSelectedItem();
+	  if (selectedItem != null) {
+		  BaseInfo f = selectedItem.getValue();
+		  if ((f != null) && f.isFolder()) {
+			  final StringBuffer result = new StringBuffer();
+			  FolderInfo folder = f.asFolderInfo();
+			  result.append("SET DESTDIT=%DESTDIR%\r\n");
+			  result.append("SET SRCDIR=").append(folder.getFullName()).append("\r\n");
+			  f.asFolderInfo().forEachFile(file -> {
+				  GuiData gd = file.getData();
+				  boolean skipThis = gd.isFilteredOut();
+				  if ((!skipThis) && skipDuplicates) {
+					  skipThis  = gd.isDuplicate();
+				  }
+				  if (!skipThis) {
+					  result.append("cp %SRCDIR%\\").append(file.getName()).append(" %DESTDIR%\r\n");
+				  }
+			  });
+			  String cmds = result.toString();
+			  Utils.copy2clipboard(cmds);
+			  taDetailedInfo.setText(cmds);
+		  }
+	  }
   }
 
+  
+  
 private void updateSelectFileInfo(BaseInfo f) {
 	  if (taDetailedInfo == null) {
 		  return;
