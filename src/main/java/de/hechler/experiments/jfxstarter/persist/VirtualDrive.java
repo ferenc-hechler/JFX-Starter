@@ -75,7 +75,7 @@ public class VirtualDrive {
 			duplicates += filesize * (entry.getValue().size()-1); 
 		}
 		System.out.println("Netto:     "+Utils.readableSize(nettosize));
-		System.out.println("Dulicates: "+Utils.readableSize(duplicates));
+		System.out.println("Duplicates: "+Utils.readableSize(duplicates));
 		System.out.println(watch.getSecondsAndReset()+"s");
 		System.out.println(Utils.getMemoryInfo());
 	}

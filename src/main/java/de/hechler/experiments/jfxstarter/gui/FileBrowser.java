@@ -28,6 +28,7 @@ import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.MenuItem;
+import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.control.SplitPane;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.ToggleButton;
@@ -45,8 +46,19 @@ import javafx.util.Callback;
 /** from: https://yumberc.github.io/FileBrowser/FileBrowser.html */
 public class FileBrowser extends Application {
   
+	  private static final String LOCAL_FILENAME = "C:\\FILEINFOS\\backupDrive\\files-G.-merged.csv";
+//	  private static final String LOCAL_FILENAME = "C:/FILEINFOS/backupDrive/DEPTH4.csv";
+//	  private static final String LOCAL_FILENAME = "out/dev-test.csv";
+  
+	  private static final String BACKUP_FILENAME = "C:/FILEINFOS/pCloud/pCloud.csv";
+//	  private static final String BACKUP_FILENAME = "out/dev-test-auswahl.csv";
+
+	  private static final String IGNORE_FILENAME = "C:\\FILEINFOS\\backupDrive\\ignore.csv";
+  
+  
   private VirtualDrive vdLocal;
   private VirtualDrive vdBackup;
+  private VirtualDrive vdIgnore;
   
   private Set<String> localDuplicateHashes;
   private Set<String> sha256hashes;
@@ -134,13 +146,12 @@ public class FileBrowser extends Application {
   private TreeTableView<BaseInfo> createFileBrowserTreeTableView() {
 
 	vdBackup = new VirtualDrive();
-	vdBackup.readFromFile("C:/FILEINFOS/pCloud/pCloud.csv");
-//	vdBackup.readFromFile("out/dev-test-auswahl.csv");
+	vdBackup.readFromFile(BACKUP_FILENAME);
 	sha256hashes = vdBackup.getSHA256Hashes();
 	vdLocal= new VirtualDrive();
-//	vdLocal.readFromFile("C:/FILEINFOS/backupDrive/DEPTH4.csv");
-	vdLocal.readFromFile("C:\\FILEINFOS\\backupDrive\\files-G.-merged.csv");
-//	vdLocal.readFromFile("out/dev-test.csv");
+	vdLocal.readFromFile(LOCAL_FILENAME);
+	vdIgnore= new VirtualDrive();
+	vdIgnore.readFromFile(IGNORE_FILENAME);
 	localDuplicateHashes = new HashSet<>();
 	vdLocal.getSHA256Map().forEach((k,v) -> {
 		if (v.size()>1) {
@@ -187,7 +198,16 @@ public class FileBrowser extends Application {
     menuItem4.setOnAction((event) -> {
         copyFolders(event, true);
     });
-    contextMenu.getItems().addAll(menuItem1,menuItem2,menuItem3,menuItem4);
+    SeparatorMenuItem sep = new SeparatorMenuItem();
+    MenuItem menuItem5 = new MenuItem("Ignore");
+    menuItem5.setOnAction((event) -> {
+        ignoreSelection(event);
+    });
+    MenuItem menuItem6 = new MenuItem("Save ignores");
+    menuItem4.setOnAction((event) -> {
+        saveIgnores(event);
+    });
+    contextMenu.getItems().addAll(menuItem1,menuItem2,menuItem3,menuItem4, sep, menuItem5,menuItem6);
     nameColumn.setCellFactory(column -> {
       TreeTableCell<BaseInfo, FileTreeItem> cell = new TreeTableCell<BaseInfo, FileTreeItem>() {
 
@@ -311,15 +331,19 @@ public class FileBrowser extends Application {
     return treeTableView;
   }
 
-  private void copyFiles(ActionEvent event, final boolean skipDuplicates) {
+  private void saveIgnores(ActionEvent event) {
+	  vdIgnore.exportToStore().writeToFile(IGNORE_FILENAME);
+  }
+
+private void copyFiles(ActionEvent event, final boolean skipDuplicates) {
 	  TreeItem<BaseInfo> selectedItem = treeTableView.getSelectionModel().getSelectedItem();
 	  if (selectedItem != null) {
 		  BaseInfo f = selectedItem.getValue();
 		  if ((f != null) && f.isFolder()) {
 			  final StringBuffer result = new StringBuffer();
 			  FolderInfo folder = f.asFolderInfo();
-			  result.append("SET DESTDIT=%DESTDIR%\r\n");
-			  result.append("SET SRCDIR=").append(folder.getFullName()).append("\r\n");
+			  result.append("SET DESTDIR=%DESTDIR%\r\n");
+			  result.append("SET SRCDIR=").append(folder.getFullName().replace('/', '\\')).append("\r\n");
 			  f.asFolderInfo().forEachDirectFile(file -> {
 				  GuiData gd = file.getData();
 				  boolean skipThis = gd.isFilteredOut();
@@ -327,7 +351,7 @@ public class FileBrowser extends Application {
 					  skipThis  = gd.isDuplicate();
 				  }
 				  if (!skipThis) {
-					  result.append("cp %SRCDIR%\\").append(file.getName()).append(" %DESTDIR%\r\n");
+					  result.append("copy \"%SRCDIR%\\").append(file.getName()).append("\" \"%DESTDIR%\"\r\n");
 				  }
 			  });
 			  String cmds = result.toString();
@@ -344,8 +368,9 @@ public class FileBrowser extends Application {
 		  if ((f != null) && f.isFolder()) {
 			  final StringBuffer result = new StringBuffer();
 			  FolderInfo folder = f.asFolderInfo();
-			  result.append("SET DESTDIT=%DESTDIR%\r\n");
-			  result.append("SET SRCDIR=").append(folder.getFullName()).append("\r\n");
+			  result.append("SET DESTDIR=%DESTDIR%\r\n");
+			  result.append("SET SRCDIR=").append(folder.getFullName().replace('/', '\\')).append("\r\n");
+			  result.append("SET XCPOPTS=/S/Q/I/Y\r\n");
 			  f.asFolderInfo().forEachDirectFolder(folder2copy -> {
 				  GuiData gd = folder2copy.getData();
 				  boolean skipThis = gd.isFilteredOut();
@@ -353,7 +378,7 @@ public class FileBrowser extends Application {
 					  skipThis  = gd.isDuplicate();
 				  }
 				  if (!skipThis) {
-					  result.append("xcopy /S/Q %SRCDIR%\\").append(folder2copy.getName()).append(" %DESTDIR%\\").append(folder2copy.getName()).append("\r\n");
+					  result.append("xcopy %XCPOPTS% \"%SRCDIR%\\").append(folder2copy.getName()).append("\" \"%DESTDIR%\\").append(folder2copy.getName()).append("\"\r\n");
 				  }
 			  });
 			  String cmds = result.toString();
@@ -363,9 +388,51 @@ public class FileBrowser extends Application {
 	  }
   }
 
-  
-  
-  
+  private void ignoreSelection(ActionEvent event) {
+	  TreeItem<BaseInfo> selectedItem = treeTableView.getSelectionModel().getSelectedItem();
+	  if (selectedItem != null) {
+		  BaseInfo f = selectedItem.getValue();
+		  if (f != null) {
+			  if (f.isFile()) {
+				  ignoreFile(f.asFileInfo());
+			  }
+			  else {
+				  f.asFolderInfo().forEachFile(file -> ignoreFile(file));
+			  }
+		  }
+          recalcGuiData();
+	  }
+  }
+
+  private void ignoreFile(FileInfo file) {
+	  FileInfo iFile = vdIgnore.getFileByID(file.id);
+	  if (iFile != null) {
+		  return;
+	  }
+	  FolderInfo parentFolder = createMissingIgnoreFolders(file.getParentFolder());
+	  iFile = new FileInfo(file.id, file.name, file.size, file.created, file.lastModified, file.sha256, file.hash);
+	  parentFolder.addFile(iFile);
+	  vdIgnore.addFile(iFile);
+  }
+
+  private FolderInfo createMissingIgnoreFolders(FolderInfo folder) {
+	  FolderInfo iFolder = vdIgnore.getFolderByID(folder.id);
+	  if (iFolder != null) {
+		  return iFolder;
+	  }
+	  if ((folder.getParentFolder() == null) || (folder.getParentFolder() == folder)) {
+		  iFolder = new FolderInfo(folder.id, "/", folder.created, folder.lastModified);
+		  vdIgnore.addFolder(iFolder);
+		  vdIgnore.setRootFolder(iFolder);
+		  return iFolder;
+	  }
+	  FolderInfo iParent = createMissingIgnoreFolders(folder.getParentFolder());
+	  iFolder = new FolderInfo(folder.id, folder.name, folder.created, folder.lastModified);
+	  iParent.addFolder(iFolder);
+	  vdIgnore.addFolder(iFolder);
+	  return iFolder;
+  }
+
 private void updateSelectFileInfo(BaseInfo f) {
 	  if (taDetailedInfo == null) {
 		  return;
@@ -447,6 +514,9 @@ private void updateSelectFileInfo(BaseInfo f) {
 		}
 		if (minFileSize>0 && !gd.filteredOut) {
 			gd.filteredOut = file.getSize() < minFileSize; 
+		}
+		if (!gd.filteredOut) {
+			gd.filteredOut = vdIgnore.containsSHA256(file.sha256);
 		}
 	});
 	recalcEffectiveSizes();
