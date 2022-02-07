@@ -85,4 +85,17 @@ public class Utils {
     	Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(text), null);    
     }
 
+    private static final String CHARS_TO_ESCAPE_IN_RX = ".+(){}[]";
+    
+	public static String glob2rx(String filter) {
+		String result = filter;
+		for (char c:CHARS_TO_ESCAPE_IN_RX.toCharArray()) {
+			result = result.replace(""+c, "\\"+c);
+		}
+		result = result.replace("*", ".*");
+		result = result.replace("?", ".");
+		System.out.println("RX("+filter+"): "+result);
+		return result;
+	}
+
 }

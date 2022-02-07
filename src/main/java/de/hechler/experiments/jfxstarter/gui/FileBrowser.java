@@ -9,6 +9,8 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
 
 import de.hechler.experiments.jfxstarter.persist.BaseInfo;
@@ -31,6 +33,7 @@ import javafx.scene.control.MenuItem;
 import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.control.SplitPane;
 import javafx.scene.control.TextArea;
+import javafx.scene.control.TextField;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeTableCell;
@@ -47,6 +50,7 @@ import javafx.util.Callback;
 public class FileBrowser extends Application {
   
 	  private static final String LOCAL_FILENAME = "C:\\FILEINFOS\\backupDrive\\files-G.-merged.csv";
+//	  private static final String LOCAL_FILENAME = "C:\\FILEINFOS\\localD\\files-D._BILDER_Katrin.csv";
 //	  private static final String LOCAL_FILENAME = "C:/FILEINFOS/backupDrive/DEPTH4.csv";
 //	  private static final String LOCAL_FILENAME = "out/dev-test.csv";
   
@@ -68,12 +72,16 @@ public class FileBrowser extends Application {
 
   TextArea taDetailedInfo; 
   TreeTableView<BaseInfo> treeTableView;
+  TextField tfNameFilter;
   
   ContextMenu contextMenu;
   
   private boolean filterDuplicates = false;
   private boolean imagesOnly = false;
   private long minFileSize = 0;
+  private Pattern nameFilter = null;
+  private boolean nameFilterIsRX = false;
+
   
 
   @Override
@@ -89,7 +97,7 @@ public class FileBrowser extends Application {
     layout.setCenter(ttvWithDetails);
 //    layout.setCenter(treeTableView);
 
-    stage.setScene(new Scene(layout, 600, 400));
+    stage.setScene(new Scene(layout, 800, 400));
     stage.show();
   }
 
@@ -124,8 +132,35 @@ public class FileBrowser extends Application {
 	    });
 	    buttonFileSize.setPrefSize(100, 20);
 
+	    tfNameFilter = new TextField();
+	    tfNameFilter.setPrefSize(200, 20);
 	    
-	    result.getChildren().addAll(buttonImagesOnly, buttonHideDupes, buttonFileSize);
+	    ToggleButton buttonRX = new ToggleButton("RX");
+	    buttonRX.setOnAction(ae -> {
+		    nameFilterIsRX = ((ToggleButton)ae.getSource()).isSelected();
+	    });
+	    buttonRX.setPrefSize(40, 20);
+
+	    
+	    ToggleButton buttonFileName = new ToggleButton("Name");
+	    buttonFileName.setOnAction(ae -> {
+	    	try {
+	    		String filter = tfNameFilter.getText();
+	    		if (!nameFilterIsRX) {
+	    			filter = Utils.glob2rx(filter);
+	    		}
+				nameFilter = ((ToggleButton)ae.getSource()).isSelected() ? Pattern.compile(filter) : null;
+				recalcGuiData();
+			} catch (PatternSyntaxException e) {
+				System.err.println("Name-Filter '"+tfNameFilter.getText()+"' is not a valid RX: "+e.toString());
+				nameFilter = null;
+				((ToggleButton)ae.getSource()).setSelected(false);
+			}
+	    });
+	    buttonFileName.setPrefSize(100, 20);
+
+	    
+	    result.getChildren().addAll(buttonImagesOnly, buttonHideDupes, buttonFileSize, tfNameFilter, buttonRX, buttonFileName);
 
 	    return result;
 	}  
@@ -204,7 +239,7 @@ public class FileBrowser extends Application {
         ignoreSelection(event);
     });
     MenuItem menuItem6 = new MenuItem("Save ignores");
-    menuItem4.setOnAction((event) -> {
+    menuItem6.setOnAction((event) -> {
         saveIgnores(event);
     });
     contextMenu.getItems().addAll(menuItem1,menuItem2,menuItem3,menuItem4, sep, menuItem5,menuItem6);
@@ -333,6 +368,7 @@ public class FileBrowser extends Application {
 
   private void saveIgnores(ActionEvent event) {
 	  vdIgnore.exportToStore().writeToFile(IGNORE_FILENAME);
+	  setDetailedText("saved ignore files to '"+IGNORE_FILENAME+"'");
   }
 
 private void copyFiles(ActionEvent event, final boolean skipDuplicates) {
@@ -399,8 +435,9 @@ private void copyFiles(ActionEvent event, final boolean skipDuplicates) {
 			  else {
 				  f.asFolderInfo().forEachFile(file -> ignoreFile(file));
 			  }
+	    	  setDetailedText("added "+f.getFullName()+" to ignore files");
+	          recalcGuiData();
 		  }
-          recalcGuiData();
 	  }
   }
 
@@ -460,8 +497,12 @@ private void updateSelectFileInfo(BaseInfo f) {
 	    	  }
     	  }
       }
-	  taDetailedInfo.setText(detailedText.toString());
+	  setDetailedText(detailedText.toString());
   }
+
+private void setDetailedText(String text) {
+	taDetailedInfo.setText(text);
+}
 
   
   private void initGuiData() {
@@ -485,8 +526,9 @@ private void updateSelectFileInfo(BaseInfo f) {
   }
 
 	private void createGuiData(FileInfo file) {
+		GuiData gd;
 		if (sha256hashes.contains(file.sha256)) {
-			file.setData(new GuiData(file.size, 0L, 0L));
+			gd = new GuiData(file.size, 0L, 0L);
 		}
 		else {
 			long ownDupe = 0L;
@@ -494,8 +536,12 @@ private void updateSelectFileInfo(BaseInfo f) {
 				long dups = vdLocal.getFilesBySHA256(file.sha256).size();
 				ownDupe = file.size * (dups-1)/dups; 
 			}
-			file.setData(new GuiData(0, file.size, ownDupe));
+			gd = new GuiData(0, file.size, ownDupe);
 		}
+		if (vdIgnore.containsSHA256(file.sha256)) {
+			gd.filteredOut = true;
+		}
+		file.setData(gd);
 	}
 
 
@@ -514,6 +560,9 @@ private void updateSelectFileInfo(BaseInfo f) {
 		}
 		if (minFileSize>0 && !gd.filteredOut) {
 			gd.filteredOut = file.getSize() < minFileSize; 
+		}
+		if (nameFilter!=null && !gd.filteredOut) {
+			gd.filteredOut = !nameFilter.matcher(file.getName()).matches(); 
 		}
 		if (!gd.filteredOut) {
 			gd.filteredOut = vdIgnore.containsSHA256(file.sha256);
@@ -545,7 +594,7 @@ private void updateSelectFileInfo(BaseInfo f) {
 			}
 		}
 	});
-	//@SuppressWarnings("unchecked")
+	@SuppressWarnings("unused")
 	GuiData rootGD = vdLocal.getRootFolder().recursiveCollect((f, childData) -> {
 		GuiData gd = f.getData();
 		if (f.isFile()) {

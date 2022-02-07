@@ -39,16 +39,16 @@ public class RecursiveReadLocalFiles {
 	
 	private void recursiveAdd(Long parentID, Path folder) {
 		try {
-			if (System.currentTimeMillis() - lastProgress > 15000) {
-				lastProgress = System.currentTimeMillis();
-				System.out.println(store.size()+" - "+folder);
-			}
 			BasicFileAttributes attr = Files.readAttributes(folder, BasicFileAttributes.class);
 			final FileFolderInfoDAO result = FileFolderInfoDAO.createFolderInfo(id++, parentID, folder.getFileName().toString(), new Date(attr.creationTime().toMillis()), new Date(attr.lastModifiedTime().toMillis())); 
 			store.add(result);
 
 			try (Stream<Path> paths = Files.list(folder)) {
 				paths.filter(path -> Files.isRegularFile(path)).forEach(path -> {
+					if (System.currentTimeMillis() - lastProgress > 15000) {
+						lastProgress = System.currentTimeMillis();
+						System.out.println(store.size()+" - "+path);
+					}
 					try {
 						BasicFileAttributes att = Files.readAttributes(path, BasicFileAttributes.class);
 						String sha256 = Utils.calcSHA256(path);
@@ -89,12 +89,13 @@ public class RecursiveReadLocalFiles {
 	
 	public static void main(String[] args) throws IOException {
 		String baseFolder = ".";
+		baseFolder = "D:\\BILDER\\Katrin";
 		String outFilePrefix = "files";
 		if (args.length >= 1) {
 			baseFolder = args[0];
 		}
 		if (args.length >= 2) {
-			baseFolder = args[1];
+			outFilePrefix = args[1];
 		}
 		baseFolder = new File(baseFolder).getCanonicalPath();
 		String csvOutFilename = outFilePrefix+"-"+baseFolder.replace(':', '.').replace('/', '_').replace('\\', '_')+".csv";
